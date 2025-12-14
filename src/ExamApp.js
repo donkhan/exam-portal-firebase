@@ -157,10 +157,20 @@ function ExamApp() {
       return;
     }
 
-    // 3️⃣ Randomize & pick questions
-    const total = examMeta.total_questions;
+      const total = examMeta.total_questions;
 
-      const selected = [];
+// Difficulty buckets
+const easyQs = allQuestions.filter(q => q.difficulty === "EASY");
+const mediumQs = allQuestions.filter(q => q.difficulty === "MEDIUM");
+const hardQs = allQuestions.filter(q => q.difficulty === "HARD");
+
+// Target counts
+let easyCount = Math.round(total * 0.4);
+let mediumCount = Math.round(total * 0.4);
+let hardCount = total - easyCount - mediumCount;
+
+// Selection
+const selected = [];
 const selectedIds = new Set();
 
 function pickFrom(bucket, count) {
@@ -179,13 +189,12 @@ pickFrom(easyQs, easyCount);
 pickFrom(mediumQs, mediumCount);
 pickFrom(hardQs, hardCount);
 
-// Fallback if any bucket is short
+// Fallback
 if (selected.length < total) {
   pickFrom(allQuestions, total - selected.length);
 }
 
 const selectedQuestions = shuffle(selected);
-
 
 
 
