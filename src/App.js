@@ -1,10 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Student from "./Student";
-import TeacherApp from "./TeacherApp";
+import Student from "./student/Student";
+import TeacherApp from "./teacher/TeacherApp";
 import { auth } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useState } from "react";
-import TeacherResults from "./TeacherResults";
+import ExamResults from "./teacher/ExamResults";
 
 const TEACHER_EMAIL = "kamil.k@cmr.edu.in";
 
@@ -36,7 +36,7 @@ function App() {
         />
         <Route path="/student" element={<Student />} />
         <Route path="/teacher" element={<TeacherApp />} />
-        <Route path="/teacher/results" element={<TeacherResults />} />
+        <Route path="/teacher/results" element={<ExamResults />} />
       </Routes>
     </BrowserRouter>
   );

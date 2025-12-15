@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "./../firebase";
 import { getAuth } from "firebase/auth";
-import StudentAttemptView from "./StudentAttemptView";
+import StudentAttemptDetails from "./StudentAttemptDetails";
 import { useNavigate } from "react-router-dom";
 
 export default function ExamResults() {
@@ -30,12 +30,7 @@ export default function ExamResults() {
   return (
     <div style={{ padding: 20 }}>
       <h2>Exam Results Dashboard</h2>
-      <button
-        onClick={() => navigate("/teacher")}
-        style={{ marginBottom: "15px" }}
-      >
-        ← Back to Teacher Dashboard
-      </button>
+      
       <hr />
 
       <input
@@ -53,7 +48,7 @@ export default function ExamResults() {
         <table border="1" cellPadding="8">
           <thead>
             <tr>
-              <th>StudentA</th>
+              <th>Student</th>
               <th>Score</th>
               <th>Status</th>
               <th>Action</th>
@@ -79,7 +74,7 @@ export default function ExamResults() {
       )}
 
       {selectedAttempt && (
-        <StudentAttemptView
+        <StudentAttemptDetails
           attempt={selectedAttempt}
           onBack={() => setSelectedAttempt(null)}
         />
