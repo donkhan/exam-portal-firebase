@@ -6,7 +6,7 @@ import {
   where,
   addDoc,
   deleteDoc,
-  doc
+  doc,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -22,7 +22,7 @@ function QuestionBank({ onBack }) {
   useEffect(() => {
     async function loadCourses() {
       const snap = await getDocs(collection(db, "courses"));
-      const list = snap.docs.map(doc => doc.data());
+      const list = snap.docs.map((doc) => doc.data());
       setCourses(list);
     }
 
@@ -36,13 +36,13 @@ function QuestionBank({ onBack }) {
 
     const q = query(
       collection(db, "questions"),
-      where("course_id", "==", courseId)
+      where("course_id", "==", courseId),
     );
 
     const snap = await getDocs(q);
-    const list = snap.docs.map(doc => ({
+    const list = snap.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     }));
 
     setQuestions(list);
@@ -90,7 +90,7 @@ function QuestionBank({ onBack }) {
           options: q.options || {},
           correct_answer: q.correct_answer || [],
           marks: q.marks,
-          created_at: Date.now()
+          created_at: Date.now(),
         });
 
         count++;
@@ -102,7 +102,6 @@ function QuestionBank({ onBack }) {
       if (selectedCourse === data.course_id) {
         loadQuestions(selectedCourse);
       }
-
     } catch (err) {
       console.error(err);
       alert("Error uploading questions");
@@ -111,45 +110,44 @@ function QuestionBank({ onBack }) {
   };
 
   const deleteAllQuestions = async () => {
-  if (!selectedCourse) {
-    alert("Please select a course first");
-    return;
-  }
+    if (!selectedCourse) {
+      alert("Please select a course first");
+      return;
+    }
 
-  const confirm1 = window.confirm(
-    `Are you sure you want to DELETE ALL questions for course ${selectedCourse}?`
-  );
+    const confirm1 = window.confirm(
+      `Are you sure you want to DELETE ALL questions for course ${selectedCourse}?`,
+    );
 
-  if (!confirm1) return;
+    if (!confirm1) return;
 
-  const confirm2 = window.prompt(
-    `Type DELETE to confirm permanent deletion of ALL questions for ${selectedCourse}`
-  );
+    const confirm2 = window.prompt(
+      `Type DELETE to confirm permanent deletion of ALL questions for ${selectedCourse}`,
+    );
 
-  if (confirm2 !== "DELETE") {
-    alert("Deletion cancelled");
-    return;
-  }
+    if (confirm2 !== "DELETE") {
+      alert("Deletion cancelled");
+      return;
+    }
 
-  setStatus("Deleting questions...");
+    setStatus("Deleting questions...");
 
-  const q = query(
-    collection(db, "questions"),
-    where("course_id", "==", selectedCourse)
-  );
+    const q = query(
+      collection(db, "questions"),
+      where("course_id", "==", selectedCourse),
+    );
 
-  const snap = await getDocs(q);
+    const snap = await getDocs(q);
 
-  let count = 0;
-  for (const docSnap of snap.docs) {
-    await deleteDoc(doc(db, "questions", docSnap.id));
-    count++;
-  }
+    let count = 0;
+    for (const docSnap of snap.docs) {
+      await deleteDoc(doc(db, "questions", docSnap.id));
+      count++;
+    }
 
-  setQuestions([]);
-  setStatus(`❌ ${count} questions permanently deleted`);
-};
-
+    setQuestions([]);
+    setStatus(`❌ ${count} questions permanently deleted`);
+  };
 
   /* ================= UI ================= */
 
@@ -160,8 +158,6 @@ function QuestionBank({ onBack }) {
       <button onClick={onBack}>← Back</button>
 
       <hr />
-          
-
 
       {/* COURSE SELECT */}
       <div style={{ marginBottom: "15px" }}>
@@ -172,7 +168,7 @@ function QuestionBank({ onBack }) {
             onChange={(e) => setSelectedCourse(e.target.value)}
           >
             <option value="">-- Select --</option>
-            {courses.map(c => (
+            {courses.map((c) => (
               <option key={c.course_id} value={c.course_id}>
                 {c.course_id} – {c.course_name}
               </option>
@@ -182,26 +178,26 @@ function QuestionBank({ onBack }) {
       </div>
 
       {selectedCourse && (
-  <div style={{ marginBottom: "15px" }}>
-    <button
-      onClick={deleteAllQuestions}
-      style={{
-        background: "#b00020",
-        color: "white",
-        padding: "8px 12px",
-        border: "none",
-        cursor: "pointer"
-      }}
-    >
-      🚨 Delete ALL Questions for {selectedCourse}
-    </button>
-  </div>
-)}
-      
+        <div style={{ marginBottom: "15px" }}>
+          <button
+            onClick={deleteAllQuestions}
+            style={{
+              background: "#b00020",
+              color: "white",
+              padding: "8px 12px",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            🚨 Delete ALL Questions for {selectedCourse}
+          </button>
+        </div>
+      )}
 
       {/* UPLOAD */}
       <div style={{ marginBottom: "20px" }}>
-        <strong>Upload Questions (JSON):</strong><br />
+        <strong>Upload Questions (JSON):</strong>
+        <br />
         <input type="file" accept=".json" onChange={handleFileUpload} />
         {status && <p>{status}</p>}
       </div>
@@ -236,9 +232,7 @@ function QuestionBank({ onBack }) {
               <tr key={q.id}>
                 <td>{index + 1}</td>
                 <td>{q.chapter}</td>
-                <td>
-                    {q.difficulty ? q.difficulty : <em>NA</em>}
-                </td>
+                <td>{q.difficulty ? q.difficulty : <em>NA</em>}</td>
                 <td>{q.question_type}</td>
                 <td>{q.marks}</td>
                 <td>{q.question_text}</td>
@@ -254,15 +248,14 @@ function QuestionBank({ onBack }) {
                   )}
                 </td>
                 <td>
-  {q.question_type === "DESCRIPTIVE" ? (
-    <em>Manual</em>
-  ) : Array.isArray(q.correct_answer) ? (
-    q.correct_answer.join(", ")
-  ) : (
-    q.correct_answer
-  )}
-</td>
-
+                  {q.question_type === "DESCRIPTIVE" ? (
+                    <em>Manual</em>
+                  ) : Array.isArray(q.correct_answer) ? (
+                    q.correct_answer.join(", ")
+                  ) : (
+                    q.correct_answer
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

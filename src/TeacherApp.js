@@ -3,7 +3,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   onAuthStateChanged,
-  signOut
+  signOut,
 } from "firebase/auth";
 import { auth } from "./firebase";
 import QuestionBank from "./QuestionBank";
@@ -74,7 +74,8 @@ function TeacherApp() {
       <h2>Teacher Portal</h2>
 
       <p>
-        <strong>{user.displayName}</strong><br />
+        <strong>{user.displayName}</strong>
+        <br />
         {user.email}
       </p>
 
@@ -96,13 +97,9 @@ function TeacherApp() {
               Question Bank
             </button>
 
-            <button onClick={() => setView("createExam")}>
-              Create Exam
-            </button>
+            <button onClick={() => setView("createExam")}>Create Exam</button>
 
-            <button onClick={() => setView("results")}>
-              View Results
-            </button>
+            <button onClick={() => setView("results")}>View Results</button>
           </div>
         </>
       )}
@@ -113,14 +110,10 @@ function TeacherApp() {
       )}
 
       {/* ---------- CREATE EXAM ---------- */}
-      {view === "createExam" && (
-        <CreateExam onBack={() => setView("home")} />
-      )}
+      {view === "createExam" && <CreateExam onBack={() => setView("home")} />}
 
       {/* ---------- RESULTS ---------- */}
-      {view === "results" && (
-        <TeacherResults onBack={() => setView("home")} />
-      )}
+      {view === "results" && <TeacherResults onBack={() => setView("home")} />}
     </div>
   );
 }

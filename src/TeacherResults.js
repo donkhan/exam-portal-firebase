@@ -5,7 +5,6 @@ import { getAuth } from "firebase/auth";
 import StudentAttemptView from "./StudentAttemptView";
 import { useNavigate } from "react-router-dom";
 
-
 export default function TeacherResults() {
   const [examId, setExamId] = useState("");
   const [attempts, setAttempts] = useState([]);
@@ -16,20 +15,15 @@ export default function TeacherResults() {
 
   const navigate = useNavigate();
 
-  
-
   if (!user || user.email !== "kamil.k@cmr.edu.in") {
     return <h3>Access Denied</h3>;
   }
 
   const loadResults = async () => {
-    const q = query(
-      collection(db, "exams"),
-      where("exam_id", "==", examId)
-    );
+    const q = query(collection(db, "exams"), where("exam_id", "==", examId));
 
     const snap = await getDocs(q);
-    const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     setAttempts(data);
   };
 
@@ -37,20 +31,20 @@ export default function TeacherResults() {
     <div style={{ padding: 20 }}>
       <h2>Teacher Results Dashboard</h2>
       <button
-  onClick={() => navigate("/teacher")}
-  style={{ marginBottom: "15px" }}
->
-  ← Back to Teacher Dashboard
-</button>
+        onClick={() => navigate("/teacher")}
+        style={{ marginBottom: "15px" }}
+      >
+        ← Back to Teacher Dashboard
+      </button>
       <hr />
 
       <input
         placeholder="Enter Exam ID"
         value={examId}
-        onChange={e => setExamId(e.target.value)}
+        onChange={(e) => setExamId(e.target.value)}
       />
-         <hr />
-      
+      <hr />
+
       <button onClick={loadResults}>Load Results</button>
 
       <hr />
@@ -66,19 +60,17 @@ export default function TeacherResults() {
             </tr>
           </thead>
           <tbody>
-            {attempts.map(a => (
+            {attempts.map((a) => (
               <tr key={a.id}>
                 <td>
-                    <strong>{a.user_name || "—"}</strong>
-                    <br />
-                    <small style={{ color: "#666" }}>{a.user_email}</small>
+                  <strong>{a.user_name || "—"}</strong>
+                  <br />
+                  <small style={{ color: "#666" }}>{a.user_email}</small>
                 </td>
                 <td>{a.score ?? "-"}</td>
                 <td>{a.submitted ? "Submitted" : "In Progress"}</td>
                 <td>
-                  <button onClick={() => setSelectedAttempt(a)}>
-                    View
-                  </button>
+                  <button onClick={() => setSelectedAttempt(a)}>View</button>
                 </td>
               </tr>
             ))}
