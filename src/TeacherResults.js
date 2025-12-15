@@ -59,7 +59,7 @@ export default function TeacherResults() {
         <table border="1" cellPadding="8">
           <thead>
             <tr>
-              <th>StudenAt</th>
+              <th>Student</th>
               <th>Score</th>
               <th>Status</th>
               <th>Action</th>
