@@ -219,7 +219,7 @@ function ExamApp() {
     name: user.displayName
   });
 
-  alert(user.email);
+
   const examDoc = {
   exam_id: examIdInput,
   course_id: examMeta.course_id,
