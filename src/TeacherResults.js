@@ -59,7 +59,7 @@ export default function TeacherResults() {
         <table border="1" cellPadding="8">
           <thead>
             <tr>
-              <th>Student</th>
+              <th>StudenAt</th>
               <th>Score</th>
               <th>Status</th>
               <th>Action</th>
@@ -68,7 +68,11 @@ export default function TeacherResults() {
           <tbody>
             {attempts.map(a => (
               <tr key={a.id}>
-                <td>{a.user_email}</td>
+                <td>
+                    <strong>{a.user_name || "—"}</strong>
+                    <br />
+                    <small style={{ color: "#666" }}>{a.user_email}</small>
+                </td>
                 <td>{a.score ?? "-"}</td>
                 <td>{a.submitted ? "Submitted" : "In Progress"}</td>
                 <td>

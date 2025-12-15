@@ -104,9 +104,7 @@ function TeacherApp() {
 
     </div>
 
-    <p style={{ marginTop: "10px", fontStyle: "italic", color: "#555" }}>
-      (Other actions will be enabled step by step)
-    </p>
+    
   </>
 )}
 
@@ -117,13 +115,6 @@ function TeacherApp() {
 {view === "createExam" && (
   <CreateExam onBack={() => setView("home")} />
 )}
-
-
-<p style={{ marginTop: "10px", fontStyle: "italic", color: "#555" }}>
-  (Actions will be enabled step by step)
-</p>
-
-
 
     </div>
   );

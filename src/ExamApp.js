@@ -96,132 +96,159 @@ function ExamApp() {
   /* ================= JOIN EXAM ================= */
 
   async function joinExam() {
-    if (!examIdInput) {
-      setError("Please enter Exam ID");
-      return;
-    }
-
-    setError("");
-
-    // 1️⃣ Fetch exam metadata
-    const metaSnap = await getDocs(
-      query(
-        collection(db, "exams_meta"),
-        where("exam_id", "==", examIdInput)
-      )
-    );
-
-    if (metaSnap.empty) {
-      setError("Invalid Exam ID");
-      return;
-    }
-
-    const examMeta = metaSnap.docs[0].data();
-
-    if (!examMeta.active) {
-      setError("This exam is not active");
-      return;
-    }
-
-    // 2️⃣ Fetch question bank
-    const qSnap = await getDocs(
-      query(
-        collection(db, "questions"),
-        where("course_id", "==", examMeta.course_id)
-      )
-    );
-
-
-    let allQuestions = qSnap.docs.map(d => ({
-      id: d.id,
-      ...d.data()
-    }));
-
-
-    // Filter by question type
-    if (!examMeta.question_types.includes("ALL")) {
-      allQuestions = allQuestions.filter(q =>
-        examMeta.question_types.includes(q.question_type)
-      );
-    }
-
-    // Filter by chapter
-    if (!examMeta.chapters.includes("ALL")) {
-      allQuestions = allQuestions.filter(q =>
-        examMeta.chapters.includes(q.chapter)
-      );
-    }
-
-    if (allQuestions.length < examMeta.total_questions) {
-      setError("Not enough questions available for this exam");
-      return;
-    }
-
-      const total = examMeta.total_questions;
-
-// Difficulty buckets
-const easyQs = allQuestions.filter(q => q.difficulty === "EASY");
-const mediumQs = allQuestions.filter(q => q.difficulty === "MEDIUM");
-const hardQs = allQuestions.filter(q => q.difficulty === "HARD");
-
-// Target counts
-let easyCount = Math.round(total * 0.4);
-let mediumCount = Math.round(total * 0.4);
-let hardCount = total - easyCount - mediumCount;
-
-// Selection
-const selected = [];
-const selectedIds = new Set();
-
-function pickFrom(bucket, count) {
-  for (let q of shuffle(bucket)) {
-    if (selected.length >= total) break;
-    if (selectedIds.has(q.id)) continue;
-
-    selected.push(q);
-    selectedIds.add(q.id);
-
-    if (--count === 0) break;
+  if (!user) {
+    setError("User not authenticated yet. Please wait and try again.");
+    return;
+  }  
+  if (!examIdInput) {
+    setError("Please enter Exam ID");
+    return;
   }
+
+  setError("");
+
+  /* 1️⃣ Fetch exam metadata */
+  const metaSnap = await getDocs(
+    query(
+      collection(db, "exams_meta"),
+      where("exam_id", "==", examIdInput)
+    )
+  );
+
+  if (metaSnap.empty) {
+    setError("Invalid Exam ID");
+    return;
+  }
+
+  const examMeta = metaSnap.docs[0].data();
+
+  if (!examMeta.active) {
+    setError("This exam is not active");
+    return;
+  }
+
+  /* 2️⃣ Fetch question bank */
+  const qSnap = await getDocs(
+    query(
+      collection(db, "questions"),
+      where("course_id", "==", examMeta.course_id)
+    )
+  );
+
+  let allQuestions = qSnap.docs.map(d => ({
+    id: d.id,
+    ...d.data()
+  }));
+
+  /* Filter by question type */
+  if (!examMeta.question_types.includes("ALL")) {
+    allQuestions = allQuestions.filter(q =>
+      examMeta.question_types.includes(q.question_type)
+    );
+  }
+
+  /* Filter by chapter */
+  if (!examMeta.chapters.includes("ALL")) {
+    allQuestions = allQuestions.filter(q =>
+      examMeta.chapters.includes(q.chapter)
+    );
+  }
+
+  if (allQuestions.length < examMeta.total_questions) {
+    setError("Not enough questions available for this exam");
+    return;
+  }
+
+  /* 3️⃣ SELECT QUESTIONS (NO REPETITION GUARANTEED) */
+
+  const total = examMeta.total_questions;
+  let selectedQuestions = [];
+
+  // How many difficulty levels actually exist?
+  const difficultySet = new Set(allQuestions.map(q => q.difficulty));
+
+  /* CASE 1: Only ONE difficulty (e.g., all HARD) */
+  if (difficultySet.size === 1) {
+    selectedQuestions = shuffle(allQuestions).slice(0, total);
+  }
+
+  /* CASE 2: Multiple difficulties → balanced selection */
+  else {
+    const easyQs = allQuestions.filter(q => q.difficulty === "EASY");
+    const mediumQs = allQuestions.filter(q => q.difficulty === "MEDIUM");
+    const hardQs = allQuestions.filter(q => q.difficulty === "HARD");
+
+    let easyCount = Math.floor(total * 0.4);
+    let mediumCount = Math.floor(total * 0.4);
+    let hardCount = total - easyCount - mediumCount;
+
+    const selected = [];
+    const selectedIds = new Set();
+
+    function pickFrom(bucket, count) {
+      for (let q of shuffle(bucket)) {
+        if (selected.length >= total) break;
+        if (selectedIds.has(q.id)) continue;
+
+        selected.push(q);
+        selectedIds.add(q.id);
+
+        if (--count === 0) break;
+      }
+    }
+
+    pickFrom(easyQs, easyCount);
+    pickFrom(mediumQs, mediumCount);
+    pickFrom(hardQs, hardCount);
+
+    // Fallback if any bucket is short
+    if (selected.length < total) {
+      pickFrom(allQuestions, total - selected.length);
+    }
+
+    selectedQuestions = shuffle(selected);
+  }
+
+  /* 4️⃣ Create student exam document */
+  const startTime = Date.now();
+  const endTime = startTime + examMeta.duration_minutes * 60 * 1000;
+
+  console.log("AUTH USER AT EXAM START:", {
+    uid: user.uid,
+    email: user.email,
+    name: user.displayName
+  });
+
+  alert(user.email);
+  const examDoc = {
+  exam_id: examIdInput,
+  course_id: examMeta.course_id,
+
+  user_id: user.uid,
+  user_email: user.email || "",
+  user_name: user.displayName || "",
+
+  questions: selectedQuestions,
+  answers: {},
+  submitted: false,
+  started_at: startTime,
+  end_at: endTime
+};
+
+  
+
+
+  const examDocId = `${examIdInput}_${user.uid}`;
+
+  await setDoc(doc(db, "exams", examDocId), examDoc);
+
+  localStorage.setItem("activeExamId", examIdInput);
+  setExam(examDoc);
+  setAnswers({});
+  setCurrentIndex(0);
 }
 
-pickFrom(easyQs, easyCount);
-pickFrom(mediumQs, mediumCount);
-pickFrom(hardQs, hardCount);
 
-// Fallback
-if (selected.length < total) {
-  pickFrom(allQuestions, total - selected.length);
-}
-
-const selectedQuestions = shuffle(selected);
-
-
-
-    // 4️⃣ Create student exam document
-    const startTime = Date.now();
-    const endTime = startTime + examMeta.duration_minutes * 60 * 1000;
-
-    const examDoc = {
-      exam_id: examIdInput,
-      course_id: examMeta.course_id,
-      user_id: user.uid,
-      questions: selectedQuestions,
-      answers: {},
-      submitted: false,
-      started_at: startTime,
-      end_at: endTime
-    };
-
-    const examDocId = `${examIdInput}_${user.uid}`;
-
-    await setDoc(doc(db, "exams", examDocId), examDoc);
-
-    setExam(examDoc);
-    localStorage.setItem("activeExamId", examIdInput);
-    setAnswers({});
-    setCurrentIndex(0);
-  }
 
   /* ================= TIMER ================= */
 
@@ -384,17 +411,18 @@ const toggleMSQOption = async (option) => {
 
   async function submitExam() {
     if (!exam || exam.submitted) return;
-
     const score = calculateScore();
-
     await updateDoc(
-      doc(db, "exams", `${exam.exam_id}_${user.uid}`),
-      {
-        submitted: true,
-        submitted_at: Date.now(),
-        score: score
-      }
-    );
+  doc(db, "exams", `${exam.exam_id}_${user.uid}`),
+  {
+    submitted: true,
+    submitted_at: Date.now(),
+    score: score,
+    user_email: user.email || "",
+    user_name: user.displayName || ""
+  }
+);
+
 
     setExam({
       ...exam,
@@ -412,13 +440,17 @@ const toggleMSQOption = async (option) => {
     const score = calculateScore();
 
     await updateDoc(
-      doc(db, "exams", `${exam.exam_id}_${user.uid}`),
-      {
-        submitted: true,
-        submitted_at: Date.now(),
-        score: score
-      }
-    );
+  doc(db, "exams", `${exam.exam_id}_${user.uid}`),
+  {
+    submitted: true,
+    submitted_at: Date.now(),
+    score: score,
+
+    user_email: user.email || "",
+    user_name: user.displayName || ""
+  }
+);
+
 
     setExam({
       ...exam,
