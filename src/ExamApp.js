@@ -16,6 +16,8 @@ import {
   updateDoc
 } from "firebase/firestore";
 import { auth, db } from "./firebase";
+import "./App.css";
+
 
 function ExamApp() {
   const [user, setUser] = useState(null);
@@ -466,10 +468,19 @@ const toggleMSQOption = async (option) => {
   const currentQuestion = exam?.questions[currentIndex];
 
   return (
-    <div style={{ padding: "20px", maxWidth: "800px", margin: "auto" }}>
-      <h2>Student Exam Portal</h2>
+    <div className="app-container">
+      <h2 align="center">Online Exam</h2>
 
-      {!user && <button onClick={login}>Login with Google</button>}
+      {!user && (
+  <div className="login-wrapper">
+    <div className="app-container" style={{ maxWidth: "420px" }}>
+      <h2>Student Exam Portal</h2>
+      <p>Please sign in to continue</p>
+      <button onClick={login}>Login with Google</button>
+    </div>
+  </div>
+)}
+
 
       {user && (
         <>
@@ -494,7 +505,7 @@ const toggleMSQOption = async (option) => {
           />
           <br /><br />
           <button onClick={joinExam}>Join Exam</button>
-          {error && <p style={{ color: "red" }}>{error}</p>}
+          {error && <p class="error">{error}</p>}
         </div>
       )}
 
@@ -502,21 +513,22 @@ const toggleMSQOption = async (option) => {
         <div>
 
           {!exam.submitted && timeLeft !== null && (
-            <p style={{ color: "red", fontWeight: "bold" }}>
+            <p className="timer">
               Time Left: {Math.floor(timeLeft / 60)}:
               {(timeLeft % 60).toString().padStart(2, "0")}
             </p>
           )}
-
-          <h3>
+          <div className="question-box">
+            <h3>
             Question {currentIndex + 1} of {exam.questions.length}
-          </h3>
-
-          <p>{currentQuestion.question_text}</p>
+            </h3>
+            <p>{currentQuestion.question_text}</p>
+          </div>  
 
           {currentQuestion.question_type === "MCQ" && (
             Object.entries(currentQuestion.options).map(([k, v]) => (
               <div key={k}>
+                <div className="option">
                 <label>
                   <input
                     type="radio"
@@ -526,6 +538,7 @@ const toggleMSQOption = async (option) => {
                   />
                   {` ${k}. ${v}`}
                 </label>
+                </div>
               </div>
             ))
           )}
@@ -551,6 +564,7 @@ const toggleMSQOption = async (option) => {
     {currentQuestion.question_type === "MSQ" && (
   Object.entries(currentQuestion.options).map(([k, v]) => (
     <div key={k}>
+      <div className="option">
       <label>
         <input
           type="checkbox"
@@ -560,6 +574,7 @@ const toggleMSQOption = async (option) => {
         />
         {` ${k}. ${v}`}
       </label>
+      </div>
     </div>
   ))
 )}
@@ -599,7 +614,7 @@ const toggleMSQOption = async (option) => {
 
           {exam.submitted && (
             <div style={{ marginTop: "15px" }}>
-              <p style={{ color: "green", fontWeight: "bold" }}>
+              <p class="success">
                 Exam submitted
               </p>
               <p>

@@ -8,8 +8,8 @@ import {
 import { auth } from "./firebase";
 import QuestionBank from "./QuestionBank";
 import CreateExam from "./CreateExam";
-import { useNavigate } from "react-router-dom";
-
+import TeacherResults from "./TeacherResults"; // ✅ add this
+import "./App.css";
 
 const TEACHER_EMAIL = "kamil.k@cmr.edu.in";
 
@@ -17,7 +17,6 @@ function TeacherApp() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("home");
-  const navigate = useNavigate();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
@@ -35,33 +34,43 @@ function TeacherApp() {
   const logout = async () => {
     await signOut(auth);
     setUser(null);
+    setView("home");
   };
 
+  /* ---------- LOADING ---------- */
   if (loading) {
     return <p>Loading...</p>;
   }
 
+  /* ---------- LOGIN ---------- */
   if (!user) {
     return (
-      <div style={{ padding: "20px" }}>
-        <h2>Teacher Portal</h2>
-        <button onClick={login}>Login with Google</button>
+      <div className="login-wrapper">
+        <div className="app-container" style={{ maxWidth: "420px" }}>
+          <h2>Teacher Portal</h2>
+          <button onClick={login}>Login with Google</button>
+        </div>
       </div>
     );
   }
 
+  /* ---------- ACCESS DENIED ---------- */
   if (user.email !== TEACHER_EMAIL) {
     return (
-      <div style={{ padding: "20px" }}>
-        <h2>Teacher Portal</h2>
-        <p style={{ color: "red" }}>Access denied. Teacher only.</p>
-        <button onClick={logout}>Logout</button>
+      <div className="login-wrapper">
+        <div className="app-container" style={{ maxWidth: "420px" }}>
+          <h2>Teacher Portal</h2>
+          <p className="error">Access denied. Teacher only.</p>
+          <button onClick={logout}>Logout</button>
+        </div>
       </div>
     );
   }
 
+  /* ---------- AUTHORIZED TEACHER ---------- */
   return (
-    <div style={{ padding: "20px" }}>
+    <div className="app-container">
+      <h2 align="center">CMR University</h2>
       <h2>Teacher Portal</h2>
 
       <p>
@@ -73,49 +82,45 @@ function TeacherApp() {
 
       <hr />
 
-     
+      <p className="success">✅ Teacher authentication successful</p>
 
-      <p style={{ color: "green", fontWeight: "bold" }}>
-  ✅ Teacher authentication successful
-</p>
+      <hr />
 
-<hr />
+      {/* ---------- HOME MENU ---------- */}
+      {view === "home" && (
+        <>
+          <h3>Teacher Actions</h3>
 
-{view === "home" && (
-  <>
-    <h3>Teacher Actions</h3>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            <button onClick={() => setView("questionBank")}>
+              Question Bank
+            </button>
 
-    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-      <button onClick={() => setView("questionBank")}>
-        Question Bank
-      </button>
+            <button onClick={() => setView("createExam")}>
+              Create Exam
+            </button>
 
-      <button onClick={() => setView("createExam")}>
-          Create Exam
-      </button>
+            <button onClick={() => setView("results")}>
+              View Results
+            </button>
+          </div>
+        </>
+      )}
 
-      <button
-  onClick={() => navigate("/teacher/results")}
-  style={{ marginLeft: "10px" }}
->
-  View Results
-</button>
+      {/* ---------- QUESTION BANK ---------- */}
+      {view === "questionBank" && (
+        <QuestionBank onBack={() => setView("home")} />
+      )}
 
+      {/* ---------- CREATE EXAM ---------- */}
+      {view === "createExam" && (
+        <CreateExam onBack={() => setView("home")} />
+      )}
 
-    </div>
-
-    
-  </>
-)}
-
-{view === "questionBank" && (
-  <QuestionBank onBack={() => setView("home")} />
-)}
-
-{view === "createExam" && (
-  <CreateExam onBack={() => setView("home")} />
-)}
-
+      {/* ---------- RESULTS ---------- */}
+      {view === "results" && (
+        <TeacherResults onBack={() => setView("home")} />
+      )}
     </div>
   );
 }
