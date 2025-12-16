@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
 import { db } from "./../firebase";
 
 function CreateExam({ onBack }) {
@@ -8,6 +8,8 @@ function CreateExam({ onBack }) {
   const [duration, setDuration] = useState(20);
   const [questionCount, setQuestionCount] = useState(10);
   const [status, setStatus] = useState("");
+  const [examId, setExamId] = useState("");
+
 
   /* ================= LOAD COURSES ================= */
 
@@ -28,8 +30,24 @@ function CreateExam({ onBack }) {
       return;
     }
 
-    const examId = `EXAM_${courseId}_${Date.now()}`;
+    if (!examId) {
+  alert("Please enter Exam ID");
+  return;
+}
 
+  const existing = await getDocs(
+  query(
+    collection(db, "exams_meta"),
+    where("exam_id", "==", examId)
+  )
+);
+
+if (!existing.empty) {
+  alert("Exam ID already exists. Choose a different one.");
+  return;
+}
+
+    
     const examMeta = {
       exam_id: examId,
       course_id: courseId,
@@ -56,6 +74,20 @@ Exam ID: ${examId}`);
       <button onClick={onBack}>← Back</button>
 
       <hr />
+
+      <div>
+  <label><strong>Exam ID</strong></label><br />
+  <input
+    type="text"
+    placeholder="Enter Exam ID (e.g. AP_ICSE_10A)"
+    value={examId}
+    onChange={(e) => setExamId(e.target.value.trim())}
+  />
+  <p style={{ fontSize: "12px", color: "#666" }}>
+    This ID will be shared with students
+  </p>
+</div>
+
 
       {/* COURSE */}
       <div style={{ marginBottom: "10px" }}>
@@ -98,7 +130,9 @@ Exam ID: ${examId}`);
           />
         </label>
       </div>
-
+       
+      
+            
       <button onClick={createExam}>Create Exam</button>
 
       {status && (

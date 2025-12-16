@@ -77,7 +77,7 @@ function QuestionBank({ onBack }) {
 
       for (const q of data.questions) {
         if (!q.chapter || !q.question_type || !q.question_text || !q.marks) {
-          alert("Invalid question entry detected");
+          alert("Invalid question entry detected at question no " + q.question_no);
           return;
         }
 
