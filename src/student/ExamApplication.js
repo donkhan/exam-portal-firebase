@@ -247,7 +247,7 @@ function ExamApplication() {
       if (remaining <= 0) {
         clearInterval(interval);
         setTimeLeft(0);
-        autoSubmit();
+        finalizeSubmission("auto");
       } else {
         setTimeLeft(Math.floor(remaining / 1000));
       }
@@ -256,77 +256,7 @@ function ExamApplication() {
     return () => clearInterval(interval);
   }, [exam]);
 
-  /* ================= SCORING ================= */
-
-  function calculateScore() {
-    let score = 0;
-
-    exam.questions.forEach((q, index) => {
-      const studentAnswer = answers[index];
-
-      // If student did not answer, skip
-      if (studentAnswer === undefined || studentAnswer === null) {
-        return;
-      }
-
-      /* ================= MCQ ================= */
-      if (q.question_type === "MCQ") {
-        const correct = q.correct_answer || [];
-
-        if (
-          Array.isArray(studentAnswer) &&
-          studentAnswer.length === 1 &&
-          correct.includes(studentAnswer[0])
-        ) {
-          score += q.marks || 1;
-        }
-      } else if (q.question_type === "MSQ") {
-
-      /* ================= MSQ ================= */
-        const correct = q.correct_answer || [];
-
-        if (!Array.isArray(studentAnswer)) return;
-
-        const studentSet = new Set(studentAnswer);
-        const correctSet = new Set(correct);
-
-        // STRICT all-or-nothing match
-        if (
-          studentSet.size === correctSet.size &&
-          [...studentSet].every((a) => correctSet.has(a))
-        ) {
-          score += q.marks || 1;
-        }
-      } else if (q.question_type === "FILL_BLANK") {
-
-      /* ================= FILL BLANK ================= */
-        if (typeof studentAnswer !== "string") return;
-
-        const correct = q.correct_answer;
-        const caseSensitive = q.case_sensitive || false;
-
-        let studentText = studentAnswer.trim();
-        let correctText = String(correct).trim();
-
-        if (!caseSensitive) {
-          studentText = studentText.toLowerCase();
-          correctText = correctText.toLowerCase();
-        }
-
-        if (studentText === correctText) {
-          score += q.marks || 1;
-        }
-      } else if (q.question_type === "DESCRIPTIVE") {
-
-      /* ================= DESCRIPTIVE ================= */
-        // No auto grading
-        return;
-      }
-    });
-
-    return score;
-  }
-
+ 
   /* ================= ANSWERS ================= */
 
   const selectMCQ = async (option) => {
@@ -383,51 +313,88 @@ function ExamApplication() {
     });
   };
 
-  /* ================= SUBMIT ================= */
+  function calculateScoreFromAnswers(answersMap, questions) {
+  let score = 0;
 
-  async function submitExam() {
-    if (!exam || exam.submitted) return;
-    const score = calculateScore();
-    await updateDoc(doc(db, "exams", `${exam.exam_id}_${user.uid}`), {
-      submitted: true,
-      submitted_at: Date.now(),
-      score: score,
-      user_email: user.email || "",
-      user_name: user.displayName || "",
-    });
+  questions.forEach((q, index) => {
+    const studentAnswer = answersMap[index];
+    if (studentAnswer === undefined) return;
 
-    setExam({
-      ...exam,
-      submitted: true,
-      score: score,
-    });
+    if (q.question_type === "MCQ") {
+      if (
+        Array.isArray(studentAnswer) &&
+        q.correct_answer.includes(studentAnswer[0])
+      ) {
+        score += q.marks || 1;
+      }
+    }
 
-    alert("Exam submitted successfully");
-    localStorage.removeItem("activeExamId");
+    else if (q.question_type === "MSQ") {
+      const correct = new Set(q.correct_answer);
+      const given = new Set(studentAnswer || []);
+
+      if (
+        correct.size === given.size &&
+        [...correct].every(v => given.has(v))
+      ) {
+        score += q.marks || 1;
+      }
+    }
+
+    else if (q.question_type === "FILL_BLANK") {
+      let a = String(studentAnswer).trim().toLowerCase();
+      let c = String(q.correct_answer).trim().toLowerCase();
+      if (a === c) score += q.marks || 1;
+    }
+  });
+
+  return score;
+}
+
+
+  async function finalizeSubmission(reason) {
+  if (!exam || exam.submitted) return;
+
+  const examRef = doc(db, "exams", `${exam.exam_id}_${user.uid}`);
+  const snap = await getDoc(examRef);
+
+  if (!snap.exists()) {
+    alert("Exam data not found");
+    return;
   }
 
-  async function autoSubmit() {
-    if (!exam || exam.submitted) return;
+  const latestExam = snap.data();
+  const latestAnswers = latestExam.answers || {};
 
-    const score = calculateScore();
+  const score = calculateScoreFromAnswers(
+    latestAnswers,
+    latestExam.questions
+  );
 
-    await updateDoc(doc(db, "exams", `${exam.exam_id}_${user.uid}`), {
-      submitted: true,
-      submitted_at: Date.now(),
-      score: score,
+  await updateDoc(examRef, {
+    submitted: true,
+    submitted_at: Date.now(),
+    score: score,
+    submission_type: reason,          // "manual" | "auto"
+    user_email: user.email || "",
+    user_name: user.displayName || ""
+  });
 
-      user_email: user.email || "",
-      user_name: user.displayName || "",
-    });
+  setExam({
+    ...latestExam,
+    submitted: true,
+    score: score
+  });
 
-    setExam({
-      ...exam,
-      submitted: true,
-      score: score,
-    });
+  localStorage.removeItem("activeExamId");
 
+  if (reason === "auto") {
     alert("Time is up! Exam auto-submitted.");
+  } else {
+    alert("Exam submitted successfully.");
   }
+}
+
 
   /* ================= UI ================= */
 
@@ -559,15 +526,8 @@ function ExamApplication() {
             </button>
 
             {currentIndex === exam.questions.length - 1 && !exam.submitted && (
-              <button
-                onClick={submitExam}
-                style={{
-                  marginLeft: "10px",
-                  background: "green",
-                  color: "white",
-                }}
-              >
-                Submit Exam
+              <button onClick={() => finalizeSubmission("manual")}>
+                  Submit Exam
               </button>
             )}
           </div>
