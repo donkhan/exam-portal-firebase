@@ -6,6 +6,7 @@ import {
   where,
   addDoc,
   deleteDoc,
+  updateDoc,
   doc,
 } from "firebase/firestore";
 import { db } from "./../firebase";
@@ -16,6 +17,8 @@ function QuestionBankManagement({ onBack }) {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editData, setEditData] = useState({});
 
   /* ================= LOAD COURSES ================= */
 
@@ -151,6 +154,24 @@ function QuestionBankManagement({ onBack }) {
     setStatus(`❌ ${count} questions permanently deleted`);
   };
 
+  const deleteSingleQuestion = async (questionId) => {
+    const ok = window.confirm(
+      "Are you sure you want to DELETE this question?\n\nThis cannot be undone.",
+    );
+
+    if (!ok) return;
+
+    try {
+      await deleteDoc(doc(db, "questions", questionId));
+
+      // Update UI without full reload
+      setQuestions((prev) => prev.filter((q) => q.id !== questionId));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete question");
+    }
+  };
+
   const downloadQuestions = () => {
     if (!selectedCourse) {
       alert("Please select a course first");
@@ -183,6 +204,46 @@ function QuestionBankManagement({ onBack }) {
     a.click();
 
     URL.revokeObjectURL(url);
+  };
+
+  const startEdit = (question) => {
+    setEditingId(question.id);
+    setEditData({
+      chapter: question.chapter,
+      difficulty: question.difficulty || "",
+      question_text: question.question_text,
+      options: question.options || {},
+      correct_answer: question.correct_answer || [],
+      marks: question.marks,
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditData({});
+  };
+
+  const saveEdit = async (questionId) => {
+    try {
+      await updateDoc(doc(db, "questions", questionId), {
+        chapter: editData.chapter,
+        difficulty: editData.difficulty,
+        question_text: editData.question_text,
+        options: editData.options,
+        correct_answer: editData.correct_answer,
+        marks: editData.marks,
+      });
+
+      // Update UI immediately
+      setQuestions((prev) =>
+        prev.map((q) => (q.id === questionId ? { ...q, ...editData } : q)),
+      );
+
+      cancelEdit();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update question");
+    }
   };
 
   /* ================= UI ================= */
@@ -274,17 +335,83 @@ function QuestionBankManagement({ onBack }) {
               <th>Question</th>
               <th>Options</th>
               <th>Correct</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {questions.map((q, index) => (
               <tr key={q.id}>
                 <td>{index + 1}</td>
-                <td>{q.chapter}</td>
-                <td>{q.difficulty ? q.difficulty : <em>NA</em>}</td>
+                <td>
+                  {editingId === q.id ? (
+                    <input
+                      value={editData.chapter}
+                      onChange={(e) =>
+                        setEditData({ ...editData, chapter: e.target.value })
+                      }
+                    />
+                  ) : (
+                    q.chapter
+                  )}
+                </td>
+
+                <td>
+                  {editingId === q.id ? (
+                    <select
+                      value={editData.difficulty}
+                      onChange={(e) =>
+                        setEditData({ ...editData, difficulty: e.target.value })
+                      }
+                    >
+                      <option value="">-- Select --</option>
+                      <option value="EASY">EASY</option>
+                      <option value="MEDIUM">MEDIUM</option>
+                      <option value="HARD">HARD</option>
+                    </select>
+                  ) : q.difficulty ? (
+                    q.difficulty
+                  ) : (
+                    <em>NA</em>
+                  )}
+                </td>
+
                 <td>{q.question_type}</td>
-                <td>{q.marks}</td>
-                <td>{q.question_text}</td>
+                <td>
+                  {editingId === q.id ? (
+                    <input
+                      type="number"
+                      value={editData.marks}
+                      onChange={(e) =>
+                        setEditData({
+                          ...editData,
+                          marks: Number(e.target.value),
+                        })
+                      }
+                      style={{ width: "60px" }}
+                    />
+                  ) : (
+                    q.marks
+                  )}
+                </td>
+
+                <td>
+                  {editingId === q.id ? (
+                    <textarea
+                      value={editData.question_text}
+                      onChange={(e) =>
+                        setEditData({
+                          ...editData,
+                          question_text: e.target.value,
+                        })
+                      }
+                      rows={3}
+                      style={{ width: "100%" }}
+                    />
+                  ) : (
+                    q.question_text
+                  )}
+                </td>
+
                 <td>
                   {q.options && Object.keys(q.options).length > 0 ? (
                     Object.entries(q.options).map(([k, v]) => (
@@ -297,12 +424,60 @@ function QuestionBankManagement({ onBack }) {
                   )}
                 </td>
                 <td>
-                  {q.question_type === "DESCRIPTIVE" ? (
+                  {editingId === q.id ? (
+                    q.question_type === "DESCRIPTIVE" ? (
+                      <em>Manual</em>
+                    ) : (
+                      <input
+                        placeholder={
+                          q.question_type === "MCQ" ? "e.g. C" : "e.g. A,C"
+                        }
+                        value={
+                          q.question_type === "MSQ"
+                            ? editData.correct_answer.join(",")
+                            : editData.correct_answer
+                        }
+                        onChange={(e) => {
+                          const val = e.target.value
+                            .toUpperCase()
+                            .replace(/\s/g, "");
+
+                          setEditData({
+                            ...editData,
+                            correct_answer:
+                              q.question_type === "MSQ"
+                                ? val.split(",").filter(Boolean)
+                                : val,
+                          });
+                        }}
+                        style={{ width: "80px" }}
+                      />
+                    )
+                  ) : q.question_type === "DESCRIPTIVE" ? (
                     <em>Manual</em>
                   ) : Array.isArray(q.correct_answer) ? (
                     q.correct_answer.join(", ")
                   ) : (
                     q.correct_answer
+                  )}
+                </td>
+
+                <td>
+                  {editingId === q.id ? (
+                    <>
+                      <button onClick={() => saveEdit(q.id)}>Save</button>
+                      <button onClick={cancelEdit}>Cancel</button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={() => startEdit(q)}>Edit</button>
+                      <button
+                        onClick={() => deleteSingleQuestion(q.id)}
+                        style={{ color: "red" }}
+                      >
+                        Delete
+                      </button>
+                    </>
                   )}
                 </td>
               </tr>
