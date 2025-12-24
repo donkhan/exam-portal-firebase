@@ -77,7 +77,9 @@ function QuestionBank({ onBack }) {
 
       for (const q of data.questions) {
         if (!q.chapter || !q.question_type || !q.question_text || !q.marks) {
-          alert("Invalid question entry detected at question no " + q.question_no);
+          alert(
+            "Invalid question entry detected at question no " + q.question_no,
+          );
           return;
         }
 
@@ -149,6 +151,40 @@ function QuestionBank({ onBack }) {
     setStatus(`❌ ${count} questions permanently deleted`);
   };
 
+  const downloadQuestions = () => {
+    if (!selectedCourse) {
+      alert("Please select a course first");
+      return;
+    }
+
+    if (questions.length === 0) {
+      alert("No questions to download for this course");
+      return;
+    }
+
+    const exportData = {
+      course_id: selectedCourse,
+      questions: questions.map((q) => {
+        // IMPORTANT: strip Firestore-only fields
+        const { id, created_at, ...rest } = q;
+        return rest;
+      }),
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: "application/json",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = `questions_${selectedCourse}.json`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+  };
+
   /* ================= UI ================= */
 
   return (
@@ -178,7 +214,20 @@ function QuestionBank({ onBack }) {
       </div>
 
       {selectedCourse && (
-        <div style={{ marginBottom: "15px" }}>
+        <div style={{ marginBottom: "15px", display: "flex", gap: "10px" }}>
+          <button
+            onClick={downloadQuestions}
+            style={{
+              background: "#1976d2",
+              color: "white",
+              padding: "8px 12px",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            ⬇️ Download Questions (JSON)
+          </button>
+
           <button
             onClick={deleteAllQuestions}
             style={{
