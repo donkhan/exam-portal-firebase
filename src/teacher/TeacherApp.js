@@ -6,9 +6,12 @@ import {
   signOut,
 } from "firebase/auth";
 import { auth } from "./../firebase";
-import QuestionBank from "./QuestionBank";
+
+import QuestionBankManagement from "./QuestionBankManagement";
 import CreateExam from "./CreateExam";
-import ExamResults from "./ExamResults"; // ✅ add this
+import ExamResults from "./ExamResults";
+import ManageCourses from "./ManageCourses"; // ✅ NEW
+
 import "./../App.css";
 
 const TEACHER_EMAIL = "kamil.k@cmr.edu.in";
@@ -97,23 +100,41 @@ function TeacherApp() {
               Question Bank
             </button>
 
-            <button onClick={() => setView("createExam")}>Create Exam</button>
+            <button onClick={() => setView("createExam")}>
+              Create Exam
+            </button>
 
-            <button onClick={() => setView("results")}>View Results</button>
+            <button onClick={() => setView("results")}>
+              View Results
+            </button>
+
+            {/* ✅ NEW */}
+            <button onClick={() => setView("manageCourses")}>
+              Manage Courses
+            </button>
           </div>
         </>
       )}
 
       {/* ---------- QUESTION BANK ---------- */}
       {view === "questionBank" && (
-        <QuestionBank onBack={() => setView("home")} />
+        <QuestionBankManagement onBack={() => setView("home")} />
       )}
 
       {/* ---------- CREATE EXAM ---------- */}
-      {view === "createExam" && <CreateExam onBack={() => setView("home")} />}
+      {view === "createExam" && (
+        <CreateExam onBack={() => setView("home")} />
+      )}
 
       {/* ---------- RESULTS ---------- */}
-      {view === "results" && <ExamResults onBack={() => setView("home")} />}
+      {view === "results" && (
+        <ExamResults onBack={() => setView("home")} />
+      )}
+
+      {/* ---------- MANAGE COURSES ---------- */}
+      {view === "manageCourses" && (
+        <ManageCourses onBack={() => setView("home")} />
+      )}
     </div>
   );
 }
