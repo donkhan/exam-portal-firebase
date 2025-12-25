@@ -97,9 +97,6 @@ function TeacherApp() {
             <button onClick={() => setView("questionBank")}>
               Question Bank
             </button>
-
-            <button onClick={() => setView("createExam")}>Create Exam</button>
-
             <button onClick={() => setView("manageCourses")}>
               Manage Courses
             </button>
@@ -116,8 +113,7 @@ function TeacherApp() {
         <QuestionBankManagement onBack={() => setView("home")} />
       )}
 
-      {/* ---------- CREATE EXAM ---------- */}
-      {view === "createExam" && <CreateExam onBack={() => setView("home")} />}
+      
 
       {/* ---------- EXAM MANAGEMENT ---------- */}
       {view === "examManagement" && (
