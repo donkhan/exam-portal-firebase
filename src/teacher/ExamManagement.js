@@ -6,11 +6,13 @@ import {
   doc,
   query,
   where,
+  writeBatch
 } from "firebase/firestore";
 import { db } from "./../firebase";
 import CreateExam from "./CreateExam";
 
-function ExamManagement({ onBack, onViewResults }) {
+function ExamManagement({ onBack, onViewResults, preselectedCourseId }) {
+
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState("list"); // list | create
@@ -38,6 +40,14 @@ function ExamManagement({ onBack, onViewResults }) {
     loadExams();
   }, []);
 
+  /* ================= AUTO CREATE MODE (OPTION-1) ================= */
+
+  useEffect(() => {
+    if (preselectedCourseId) {
+      setMode("create");
+    }
+  }, [preselectedCourseId]);
+
   /* ================= HARD DELETE (SINGLE EXAM) ================= */
 
   const deleteExam = async (examDocId, examId) => {
@@ -55,7 +65,6 @@ function ExamManagement({ onBack, onViewResults }) {
     }
 
     try {
-      /* delete attempts */
       const attemptsQuery = query(
         collection(db, "exams"),
         where("exam_id", "==", examId)
@@ -68,9 +77,7 @@ function ExamManagement({ onBack, onViewResults }) {
         deletedAttempts++;
       }
 
-      /* delete exam meta */
       await deleteDoc(doc(db, "exams_meta", examDocId));
-
       setExams((prev) => prev.filter((e) => e.id !== examDocId));
 
       alert(
@@ -82,7 +89,44 @@ function ExamManagement({ onBack, onViewResults }) {
     }
   };
 
-  /* ================= ADMIN: DELETE ALL ================= */
+  /* ================= ADMIN: GLOBAL COURSE + QUESTION RESET ================= */
+
+  async function handleGlobalReset() {
+    const confirmation = window.prompt(
+      "⚠️ EXTREME DANGER ⚠️\n\n" +
+      "This will PERMANENTLY DELETE:\n" +
+      "- ALL courses\n" +
+      "- ALL questions\n\n" +
+      "Type DELETE ALL to proceed."
+    );
+
+    if (confirmation !== "DELETE ALL") {
+      alert("Action cancelled.");
+      return;
+    }
+
+    try {
+      const batch = writeBatch(db);
+
+      const questionsSnap = await getDocs(collection(db, "questions"));
+      questionsSnap.docs.forEach(qDoc => {
+        batch.delete(doc(db, "questions", qDoc.id));
+      });
+
+      const coursesSnap = await getDocs(collection(db, "courses"));
+      coursesSnap.docs.forEach(cDoc => {
+        batch.delete(doc(db, "courses", cDoc.id));
+      });
+
+      await batch.commit();
+      alert("🔥 ALL courses and questions deleted.");
+    } catch (err) {
+      console.error("Global reset failed:", err);
+      alert("Failed to perform global reset. Check console.");
+    }
+  }
+
+  /* ================= ADMIN: DELETE ALL EXAMS ================= */
 
   const deleteAllExams = async () => {
     const confirm1 = window.confirm(
@@ -100,24 +144,17 @@ function ExamManagement({ onBack, onViewResults }) {
 
     try {
       const examsSnap = await getDocs(collection(db, "exams"));
-      let deletedAttempts = 0;
       for (const d of examsSnap.docs) {
         await deleteDoc(doc(db, "exams", d.id));
-        deletedAttempts++;
       }
 
       const metaSnap = await getDocs(collection(db, "exams_meta"));
-      let deletedExams = 0;
       for (const d of metaSnap.docs) {
         await deleteDoc(doc(db, "exams_meta", d.id));
-        deletedExams++;
       }
 
       setExams([]);
-
-      alert(
-        `ADMIN CLEANUP COMPLETE\n\nDeleted Exams: ${deletedExams}\nDeleted Results: ${deletedAttempts}`
-      );
+      alert("ADMIN CLEANUP COMPLETE");
     } catch (err) {
       console.error("Admin cleanup failed:", err);
       alert("Cleanup failed. Check console.");
@@ -137,9 +174,11 @@ function ExamManagement({ onBack, onViewResults }) {
       {/* ---------- CREATE MODE ---------- */}
       {mode === "create" && (
         <CreateExam
+          preselectedCourseId={preselectedCourseId}
           onBack={() => {
             setMode("list");
-            loadExams(); // refresh list after create
+            loadExams();
+            if (preselectedCourseId) onBack();
           }}
         />
       )}
@@ -162,16 +201,11 @@ function ExamManagement({ onBack, onViewResults }) {
           </button>
 
           {loading && <p>Loading exams...</p>}
-
           {!loading && exams.length === 0 && <p>No exams found.</p>}
 
           {!loading && exams.length > 0 && (
-            <table
-              border="1"
-              cellPadding="8"
-              style={{ borderCollapse: "collapse", width: "100%" }}
-            >
-              <thead style={{ background: "#f0f0f0" }}>
+            <table border="1" cellPadding="8" style={{ width: "100%" }}>
+              <thead>
                 <tr>
                   <th>#</th>
                   <th>Exam ID</th>
@@ -189,31 +223,17 @@ function ExamManagement({ onBack, onViewResults }) {
                     <td>{index + 1}</td>
                     <td>{e.exam_id}</td>
                     <td>{e.course_id}</td>
-                    <td>
-                      {Array.isArray(e.chapters)
-                        ? e.chapters.join(", ")
-                        : <em>NA</em>}
-                    </td>
+                    <td>{Array.isArray(e.chapters) ? e.chapters.join(", ") : "NA"}</td>
                     <td>{e.duration_minutes}</td>
                     <td>{e.total_questions}</td>
                     <td>{e.active ? "YES" : "NO"}</td>
                     <td>
-                      <button
-                        onClick={() => onViewResults(e.exam_id)}
-                        style={{ marginRight: "6px" }}
-                      >
+                      <button onClick={() => onViewResults(e.exam_id)}>
                         Results
                       </button>
-
                       <button
                         onClick={() => deleteExam(e.id, e.exam_id)}
-                        style={{
-                          background: "#b00020",
-                          color: "white",
-                          border: "none",
-                          padding: "6px 10px",
-                          cursor: "pointer",
-                        }}
+                        style={{ marginLeft: "6px", background: "#b00020", color: "white" }}
                       >
                         Delete
                       </button>
@@ -226,28 +246,23 @@ function ExamManagement({ onBack, onViewResults }) {
 
           <hr />
 
-          {/* ---------- ADMIN DANGER ZONE ---------- */}
-          <div style={{ marginTop: "20px" }}>
-            <h4 style={{ color: "#b00020" }}>⚠️ Admin Danger Zone</h4>
+          <h4 style={{ color: "#b00020" }}>⚠️ Admin Danger Zone</h4>
 
-            <button
-              onClick={deleteAllExams}
-              style={{
-                background: "#b00020",
-                color: "white",
-                border: "none",
-                padding: "10px 14px",
-                cursor: "pointer",
-              }}
-            >
-              🚨 Delete ALL Exams & Results
-            </button>
+          <button
+            onClick={deleteAllExams}
+            style={{ background: "#b00020", color: "white", padding: "10px" }}
+          >
+            🚨 Delete ALL Exams & Results
+          </button>
 
-            <p style={{ fontSize: "12px", color: "#666", marginTop: "8px" }}>
-              This will permanently remove all exams and all student attempts.
-              Use only for system cleanup.
-            </p>
-          </div>
+          <br /><br />
+
+          <button
+            onClick={handleGlobalReset}
+            style={{ background: "#b00020", color: "white", padding: "10px" }}
+          >
+            ⚠️ DELETE ALL COURSES & QUESTIONS
+          </button>
         </>
       )}
     </div>

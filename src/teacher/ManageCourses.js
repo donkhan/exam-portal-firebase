@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   collection,
   getDocs,
@@ -9,8 +10,12 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 import QuestionBankManagement from "./QuestionBankManagement";
+import ExamManagement from "./ExamManagement";
+
 
 function ManageCourses({ onBack }) {
+  const navigate = useNavigate();
+
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,6 +32,9 @@ function ManageCourses({ onBack }) {
 
   /* ---------- QUESTION BANK VIEW ---------- */
   const [viewQBForCourse, setViewQBForCourse] = useState(null);
+  /* ---------- CREATE EXAM VIEW ---------- */
+  const [createExamForCourse, setCreateExamForCourse] = useState(null);
+
 
   useEffect(() => {
     fetchCourses();
@@ -119,7 +127,25 @@ function ManageCourses({ onBack }) {
     }
   };
 
+  const handleCreateExam = (courseId) => {
+    setCreateExamForCourse(courseId);
+  };
+
+  
+
+
   /* ================= UI ================= */
+
+  /* ---------- CREATE EXAM SUB-VIEW ---------- */
+if (createExamForCourse) {
+  return (
+    <ExamManagement
+      preselectedCourseId={createExamForCourse}
+      onBack={() => setCreateExamForCourse(null)}
+    />
+  );
+}
+
 
   /* ---------- QUESTION BANK SUB-VIEW ---------- */
   if (viewQBForCourse) {
@@ -226,6 +252,13 @@ function ManageCourses({ onBack }) {
                     style={{ marginRight: "6px" }}
                   >
                     View Question Bank
+                  </button>
+
+                  <button
+                    onClick={() => handleCreateExam(c.course_id)}
+                    style={{ marginRight: "6px" }}
+                  >
+                    Create Exam
                   </button>
 
                   {editingId === c.id ? (

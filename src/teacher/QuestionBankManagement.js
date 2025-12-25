@@ -74,6 +74,11 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
 
   /* ================= UPLOAD QUESTIONS ================= */
 
+  function generateUUID() {
+    return crypto.randomUUID();
+  }
+
+
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -91,15 +96,16 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
       let count = 0;
 
       for (const q of data.questions) {
-        if (!q.chapter || !q.question_type || !q.question_text || !q.marks) {
+        if (!q.chapter || !q.question_type || !q.question_text || !q.marks || !q.correct_answer) {
           alert(
-            "Invalid question entry detected at question no " + q.question_no,
+            "Invalid question entry detected at question  " + q.question_text,
           );
           return;
         }
 
         await addDoc(collection(db, "questions"), {
           course_id: data.course_id,
+          question_id: crypto.randomUUID(),
           chapter: q.chapter,
           difficulty: q.difficulty,
           question_type: q.question_type,
@@ -108,6 +114,7 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
           correct_answer: q.correct_answer || [],
           marks: q.marks,
           created_at: Date.now(),
+
         });
 
         count++;
