@@ -10,7 +10,8 @@ import { auth } from "./../firebase";
 import QuestionBankManagement from "./QuestionBankManagement";
 import CreateExam from "./CreateExam";
 import ExamResults from "./ExamResults";
-import ManageCourses from "./ManageCourses"; // ✅ NEW
+import ManageCourses from "./ManageCourses";
+import ExamManagement from "./ExamManagement";
 
 import "./../App.css";
 
@@ -20,6 +21,7 @@ function TeacherApp() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("home");
+  const [selectedExamId, setSelectedExamId] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
@@ -41,9 +43,7 @@ function TeacherApp() {
   };
 
   /* ---------- LOADING ---------- */
-  if (loading) {
-    return <p>Loading...</p>;
-  }
+  if (loading) return <p>Loading...</p>;
 
   /* ---------- LOGIN ---------- */
   if (!user) {
@@ -85,9 +85,7 @@ function TeacherApp() {
       <button onClick={logout}>Logout</button>
 
       <hr />
-
       <p className="success">✅ Teacher authentication successful</p>
-
       <hr />
 
       {/* ---------- HOME MENU ---------- */}
@@ -100,17 +98,14 @@ function TeacherApp() {
               Question Bank
             </button>
 
-            <button onClick={() => setView("createExam")}>
-              Create Exam
-            </button>
+            <button onClick={() => setView("createExam")}>Create Exam</button>
 
-            <button onClick={() => setView("results")}>
-              View Results
-            </button>
-
-            {/* ✅ NEW */}
             <button onClick={() => setView("manageCourses")}>
               Manage Courses
+            </button>
+
+            <button onClick={() => setView("examManagement")}>
+              Exam Management
             </button>
           </div>
         </>
@@ -122,13 +117,25 @@ function TeacherApp() {
       )}
 
       {/* ---------- CREATE EXAM ---------- */}
-      {view === "createExam" && (
-        <CreateExam onBack={() => setView("home")} />
+      {view === "createExam" && <CreateExam onBack={() => setView("home")} />}
+
+      {/* ---------- EXAM MANAGEMENT ---------- */}
+      {view === "examManagement" && (
+        <ExamManagement
+          onBack={() => setView("home")}
+          onViewResults={(examId) => {
+            setSelectedExamId(examId);
+            setView("examResults");
+          }}
+        />
       )}
 
-      {/* ---------- RESULTS ---------- */}
-      {view === "results" && (
-        <ExamResults onBack={() => setView("home")} />
+      {/* ---------- EXAM RESULTS ---------- */}
+      {view === "examResults" && (
+        <ExamResults
+          examId={selectedExamId}
+          onBack={() => setView("examManagement")}
+        />
       )}
 
       {/* ---------- MANAGE COURSES ---------- */}
