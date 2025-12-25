@@ -7,8 +7,6 @@ import {
 } from "firebase/auth";
 import { auth } from "./../firebase";
 
-import QuestionBankManagement from "./QuestionBankManagement";
-import CreateExam from "./CreateExam";
 import ExamResults from "./ExamResults";
 import ManageCourses from "./ManageCourses";
 import ExamManagement from "./ExamManagement";
@@ -94,9 +92,6 @@ function TeacherApp() {
           <h3>Teacher Actions</h3>
 
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <button onClick={() => setView("questionBank")}>
-              Question Bank
-            </button>
             <button onClick={() => setView("manageCourses")}>
               Manage Courses
             </button>
@@ -107,13 +102,6 @@ function TeacherApp() {
           </div>
         </>
       )}
-
-      {/* ---------- QUESTION BANK ---------- */}
-      {view === "questionBank" && (
-        <QuestionBankManagement onBack={() => setView("home")} />
-      )}
-
-      
 
       {/* ---------- EXAM MANAGEMENT ---------- */}
       {view === "examManagement" && (

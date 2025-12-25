@@ -8,21 +8,25 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import QuestionBankManagement from "./QuestionBankManagement";
 
 function ManageCourses({ onBack }) {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // edit state
+  /* ---------- EDIT STATE ---------- */
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
   const [editActive, setEditActive] = useState(true);
 
-  // add state
+  /* ---------- ADD STATE ---------- */
   const [showAdd, setShowAdd] = useState(false);
   const [newId, setNewId] = useState("");
   const [newName, setNewName] = useState("");
   const [newActive, setNewActive] = useState(true);
+
+  /* ---------- QUESTION BANK VIEW ---------- */
+  const [viewQBForCourse, setViewQBForCourse] = useState(null);
 
   useEffect(() => {
     fetchCourses();
@@ -44,7 +48,7 @@ function ManageCourses({ onBack }) {
     }
   };
 
-  /* ---------- ADD ---------- */
+  /* ---------- ADD COURSE ---------- */
   const handleAdd = async () => {
     if (!newId.trim() || !newName.trim()) {
       alert("Course ID and Course Name are required.");
@@ -60,7 +64,6 @@ function ManageCourses({ onBack }) {
         active: newActive,
       });
 
-      // reset form
       setShowAdd(false);
       setNewId("");
       setNewName("");
@@ -73,7 +76,7 @@ function ManageCourses({ onBack }) {
     }
   };
 
-  /* ---------- DELETE ---------- */
+  /* ---------- DELETE COURSE ---------- */
   const handleDelete = async (courseId) => {
     const ok = window.confirm(
       `Are you sure you want to DELETE course "${courseId}"?\n\nThis cannot be undone.`,
@@ -89,7 +92,7 @@ function ManageCourses({ onBack }) {
     }
   };
 
-  /* ---------- EDIT ---------- */
+  /* ---------- EDIT COURSE ---------- */
   const startEdit = (course) => {
     setEditingId(course.id);
     setEditName(course.course_name);
@@ -116,6 +119,19 @@ function ManageCourses({ onBack }) {
     }
   };
 
+  /* ================= UI ================= */
+
+  /* ---------- QUESTION BANK SUB-VIEW ---------- */
+  if (viewQBForCourse) {
+    return (
+      <QuestionBankManagement
+        courseId={viewQBForCourse}
+        onBack={() => setViewQBForCourse(null)}
+      />
+    );
+  }
+
+  /* ---------- COURSE LIST VIEW ---------- */
   return (
     <div>
       <h3>Manage Courses</h3>
@@ -205,6 +221,13 @@ function ManageCourses({ onBack }) {
                 </td>
 
                 <td>
+                  <button
+                    onClick={() => setViewQBForCourse(c.course_id)}
+                    style={{ marginRight: "6px" }}
+                  >
+                    View Question Bank
+                  </button>
+
                   {editingId === c.id ? (
                     <>
                       <button onClick={() => saveEdit(c.id)}>Save</button>

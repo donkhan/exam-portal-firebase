@@ -11,9 +11,10 @@ import {
 } from "firebase/firestore";
 import { db } from "./../firebase";
 
-function QuestionBankManagement({ onBack }) {
+function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
   const [courses, setCourses] = useState([]);
-  const [selectedCourse, setSelectedCourse] = useState("");
+  const [selectedCourse, setSelectedCourse] = useState(fixedCourseId || "");
+
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
