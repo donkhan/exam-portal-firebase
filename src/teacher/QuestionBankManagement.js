@@ -78,7 +78,6 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
     return crypto.randomUUID();
   }
 
-
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -96,7 +95,13 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
       let count = 0;
 
       for (const q of data.questions) {
-        if (!q.chapter || !q.question_type || !q.question_text || !q.marks || !q.correct_answer) {
+        if (
+          !q.chapter ||
+          !q.question_type ||
+          !q.question_text ||
+          !q.marks ||
+          !q.correct_answer
+        ) {
           alert(
             "Invalid question entry detected at question  " + q.question_text,
           );
@@ -114,7 +119,6 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
           correct_answer: q.correct_answer || [],
           marks: q.marks,
           created_at: Date.now(),
-
         });
 
         count++;
@@ -128,7 +132,7 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
       }
     } catch (err) {
       console.error(err);
-      alert("Error uploading questions");
+      alert("Error uploading questions " + err);
       setStatus("❌ Upload failed");
     }
   };
