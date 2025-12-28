@@ -29,6 +29,7 @@ function ExamApplication() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [courseName, setCourseName] = useState("");
 
   // 🔑 THIS is the missing link earlier
   const [activeExamId, setActiveExamId] = useState(null);
@@ -65,6 +66,26 @@ function ExamApplication() {
       setActiveExamId(stored);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!exam?.course_id) return;
+
+    async function fetchCourseName() {
+      try {
+        const courseRef = doc(db, "courses", exam.course_id);
+        const snap = await getDoc(courseRef);
+        if (snap.exists()) {
+          setCourseName(snap.data().course_name || exam.course_id);
+        } else {
+          setCourseName(exam.course_id);
+        }
+      } catch {
+        setCourseName(exam.course_id);
+      }
+    }
+
+    fetchCourseName();
+  }, [exam?.course_id]);
 
   /* ================= REALTIME EXAM LISTENER ================= */
 
@@ -183,7 +204,6 @@ function ExamApplication() {
     const examDoc = {
       exam_id: examIdInput,
       course_id: examMeta.course_id,
-      //course_name: examMeta.course_name,
       user_id: user.uid,
       user_email: user.email || "",
       user_name: user.displayName || "",
@@ -296,7 +316,7 @@ function ExamApplication() {
         <div className="exam-info">
           <strong>Exam ID:</strong> {exam.exam_id}
           <br />
-          <strong>Course:</strong> {exam.course_name || exam.course_id}
+          <strong>Course:</strong> {courseName}
           <br />
           <br />
         </div>
