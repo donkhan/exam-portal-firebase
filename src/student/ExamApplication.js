@@ -183,6 +183,7 @@ function ExamApplication() {
     const examDoc = {
       exam_id: examIdInput,
       course_id: examMeta.course_id,
+      //course_name: examMeta.course_name,
       user_id: user.uid,
       user_email: user.email || "",
       user_name: user.displayName || "",
@@ -278,6 +279,39 @@ function ExamApplication() {
 
       <br />
       <br />
+
+      {user && (
+        <div className="student-info">
+          <strong>{user.displayName}</strong>
+          <br />
+          {user.email}
+          <br />
+          <br />
+        </div>
+      )}
+
+      <br />
+
+      {exam && (
+        <div className="exam-info">
+          <strong>Exam ID:</strong> {exam.exam_id}
+          <br />
+          <strong>Course:</strong> {exam.course_name || exam.course_id}
+          <br />
+          <br />
+        </div>
+      )}
+
+      {exam && (
+        <div className="attempt-status">
+          <strong>Attempt Status:</strong>{" "}
+          {exam.status === "IN_PROGRESS" && "In Progress"}
+          {exam.status === "SUBMITTED" && "Submitted (Evaluating)"}
+          {exam.status === "EVALUATED" && "Evaluated"}
+          <br />
+          <br />
+        </div>
+      )}
 
       {!exam && user && (
         <>
