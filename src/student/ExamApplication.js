@@ -69,6 +69,13 @@ function ExamApplication() {
   /* ================= REALTIME EXAM LISTENER ================= */
 
   useEffect(() => {
+    if (exam?.status === "EVALUATED") {
+      localStorage.removeItem("activeExamId");
+      // keep activeExamId in state so results remain visible
+    }
+  }, [exam?.status]);
+
+  useEffect(() => {
     if (!user || !activeExamId) return;
 
     const examRef = doc(db, "exams", `${activeExamId}_${user.uid}`);
@@ -253,15 +260,6 @@ function ExamApplication() {
         submission_type: reason,
         status: "SUBMITTED",
       });
-
-      localStorage.removeItem("activeExamId");
-      setActiveExamId(null);
-
-      alert(
-        reason === "auto"
-          ? "Time is up! Exam auto-submitted."
-          : "Exam submitted successfully.",
-      );
     } finally {
       setSubmitting(false);
     }
