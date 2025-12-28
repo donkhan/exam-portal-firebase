@@ -83,7 +83,7 @@ exports.evaluateExamOnSubmit = onDocumentUpdated(
                 }
             }
 
-            if (isCorrect) {
+            if (isCorrect) {    
                 score += marks;
                 correct++;
             } else if (studentAnswer !== undefined) {
@@ -94,6 +94,7 @@ exports.evaluateExamOnSubmit = onDocumentUpdated(
                 question_id: q.id,
                 is_correct: isCorrect,
                 marks_awarded: isCorrect ? marks : 0,
+                correct_answer: correctAnswer   
             });
         });
 
