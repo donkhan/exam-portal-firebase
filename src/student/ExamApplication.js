@@ -92,108 +92,107 @@ function ExamApplication() {
   /* ================= JOIN EXAM ================= */
 
   async function joinExam() {
-  if (!user) return setError("Please login");
-  if (!examIdInput) return setError("Enter Exam ID");
+    if (!user) return setError("Please login");
+    if (!examIdInput) return setError("Enter Exam ID");
 
-  setError("");
+    setError("");
 
-  const examDocId = `${examIdInput}_${user.uid}`;
-  const examRef = doc(db, "exams", examDocId);
+    const examDocId = `${examIdInput}_${user.uid}`;
+    const examRef = doc(db, "exams", examDocId);
 
-  // 🔍 STEP 1: Check if exam already exists
-  const existingSnap = await getDoc(examRef);
+    // 🔍 STEP 1: Check if exam already exists
+    const existingSnap = await getDoc(examRef);
 
-  if (existingSnap.exists()) {
-    const existingExam = existingSnap.data();
+    if (existingSnap.exists()) {
+      const existingExam = existingSnap.data();
 
-    // ✅ Exam already finished → show results
-    if (existingExam.submitted) {
+      // ✅ Exam already finished → show results
+      if (existingExam.submitted) {
+        setActiveExamId(examIdInput);
+        setCurrentIndex(0);
+        return;
+      }
+
+      // ✅ Exam in progress → resume
       setActiveExamId(examIdInput);
       setCurrentIndex(0);
       return;
     }
 
-    // ✅ Exam in progress → resume
+    // 🆕 STEP 2: Fresh exam creation
+    const metaSnap = await getDocs(
+      query(collection(db, "exams_meta"), where("exam_id", "==", examIdInput)),
+    );
+
+    if (metaSnap.empty) return setError("Invalid Exam ID");
+
+    const examMeta = metaSnap.docs[0].data();
+    if (!examMeta.active) return setError("Exam not active");
+
+    const qSnap = await getDocs(
+      query(
+        collection(db, "questions"),
+        where("course_id", "==", examMeta.course_id),
+      ),
+    );
+
+    let allQuestions = qSnap.docs.map((d) => {
+      const q = d.data();
+      return {
+        id: d.id,
+        question_text: q.question_text,
+        options: q.options,
+        question_type: q.question_type,
+        marks: q.marks,
+        difficulty: q.difficulty,
+        chapter: q.chapter,
+      };
+    });
+
+    if (!examMeta.question_types.includes("ALL")) {
+      allQuestions = allQuestions.filter((q) =>
+        examMeta.question_types.includes(q.question_type),
+      );
+    }
+
+    if (!examMeta.chapters.includes("ALL")) {
+      allQuestions = allQuestions.filter((q) =>
+        examMeta.chapters.includes(q.chapter),
+      );
+    }
+
+    if (allQuestions.length < examMeta.total_questions) {
+      return setError("Not enough questions");
+    }
+
+    const selectedQuestions = shuffle(allQuestions).slice(
+      0,
+      examMeta.total_questions,
+    );
+
+    const start = Date.now();
+    const end = start + examMeta.duration_minutes * 60 * 1000;
+
+    const examDoc = {
+      exam_id: examIdInput,
+      course_id: examMeta.course_id,
+      user_id: user.uid,
+      user_email: user.email || "",
+      user_name: user.displayName || "",
+      questions: selectedQuestions,
+      answers: {},
+      submitted: false,
+      status: "IN_PROGRESS",
+      started_at: start,
+      end_at: end,
+    };
+
+    await setDoc(examRef, examDoc);
+
+    localStorage.setItem("activeExamId", examIdInput);
     setActiveExamId(examIdInput);
     setCurrentIndex(0);
-    return;
   }
-
-  // 🆕 STEP 2: Fresh exam creation
-  const metaSnap = await getDocs(
-    query(collection(db, "exams_meta"), where("exam_id", "==", examIdInput))
-  );
-
-  if (metaSnap.empty) return setError("Invalid Exam ID");
-
-  const examMeta = metaSnap.docs[0].data();
-  if (!examMeta.active) return setError("Exam not active");
-
-  const qSnap = await getDocs(
-    query(
-      collection(db, "questions"),
-      where("course_id", "==", examMeta.course_id)
-    )
-  );
-
-  let allQuestions = qSnap.docs.map((d) => {
-    const q = d.data();
-    return {
-      id: d.id,
-      question_text: q.question_text,
-      options: q.options,
-      question_type: q.question_type,
-      marks: q.marks,
-      difficulty: q.difficulty,
-      chapter: q.chapter,
-    };
-  });
-
-  if (!examMeta.question_types.includes("ALL")) {
-    allQuestions = allQuestions.filter((q) =>
-      examMeta.question_types.includes(q.question_type)
-    );
-  }
-
-  if (!examMeta.chapters.includes("ALL")) {
-    allQuestions = allQuestions.filter((q) =>
-      examMeta.chapters.includes(q.chapter)
-    );
-  }
-
-  if (allQuestions.length < examMeta.total_questions) {
-    return setError("Not enough questions");
-  }
-
-  const selectedQuestions = shuffle(allQuestions).slice(
-    0,
-    examMeta.total_questions
-  );
-
-  const start = Date.now();
-  const end = start + examMeta.duration_minutes * 60 * 1000;
-
-  const examDoc = {
-    exam_id: examIdInput,
-    course_id: examMeta.course_id,
-    user_id: user.uid,
-    user_email: user.email || "",
-    user_name: user.displayName || "",
-    questions: selectedQuestions,
-    answers: {},
-    submitted: false,
-    status: "IN_PROGRESS",
-    started_at: start,
-    end_at: end,
-  };
-
-  await setDoc(examRef, examDoc);
-
-  localStorage.setItem("activeExamId", examIdInput);
-  setActiveExamId(examIdInput);
-  setCurrentIndex(0);
-}
-
 
   /* ================= TIMER ================= */
 
@@ -291,7 +290,7 @@ function ExamApplication() {
           />
           <br />
           <br />
-          
+
           <button onClick={joinExam}>Join Exam</button>
           {error && <p className="error">{error}</p>}
         </>
