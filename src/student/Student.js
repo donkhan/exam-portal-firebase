@@ -1,4 +1,5 @@
 import ExamApp from "./ExamApplication";
+import "./student.css";
 
 function Student() {
   return (

@@ -362,14 +362,16 @@ function ExamApplication() {
           </h3>
 
           {q.question_type === "MCQ" &&
-            Object.entries(q.options).map(([k, v]) => (
-              <label key={k}>
+            Object.entries(q.options).map(([k, v], idx) => (
+              <label key={k} className="mcq-option">
                 <input
                   type="radio"
+                  name={`q-${q.question_id}`}
                   checked={answers[currentIndex]?.[0] === k}
                   onChange={() => selectMCQ(k)}
                 />
-                {k}. {v}
+                <span className="option-key">{k}.</span>
+                <span className="option-text">{v}</span>
               </label>
             ))}
 

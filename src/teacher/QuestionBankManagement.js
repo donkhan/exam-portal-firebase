@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   collection,
   getDocs,
@@ -21,6 +21,7 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
   const [showAddForm, setShowAddForm] = useState(false);
+  const fileInputRef = useRef(null);
 
   const [newQuestion, setNewQuestion] = useState({
     chapter: "",
@@ -74,10 +75,6 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
 
   /* ================= UPLOAD QUESTIONS ================= */
 
-  function generateUUID() {
-    return crypto.randomUUID();
-  }
-
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -89,6 +86,10 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
 
       if (!data.course_id || !Array.isArray(data.questions)) {
         alert("Invalid JSON format");
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+        setStatus("Failed to read");
         return;
       }
 
@@ -103,8 +104,21 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
           !q.correct_answer
         ) {
           alert(
-            "Invalid question entry detected at question  " + q.question_text,
+            "Invalid question entry detected at question  chapter " +
+              q.chapter +
+              " type " +
+              q.question_type +
+              " text " +
+              q.question_text +
+              " marks " +
+              q.marks +
+              " correct_answer " +
+              q.correct_answer,
           );
+          if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+          }
+          setStatus("Failed to read");
           return;
         }
 
@@ -134,6 +148,9 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
       console.error(err);
       alert("Error uploading questions " + err);
       setStatus("❌ Upload failed");
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -499,7 +516,12 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
       <div style={{ marginBottom: "20px" }}>
         <strong>Upload Questions (JSON):</strong>
         <br />
-        <input type="file" accept=".json" onChange={handleFileUpload} />
+        <input
+          type="file"
+          accept=".json"
+          onChange={handleFileUpload}
+          ref={fileInputRef}
+        />
         {status && <p>{status}</p>}
       </div>
 
@@ -657,11 +679,13 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
                   {editingId === q.id ? (
                     <>
                       <button onClick={() => saveEdit(q.id)}>Save</button>
+                      <hr />
                       <button onClick={cancelEdit}>Cancel</button>
                     </>
                   ) : (
                     <>
                       <button onClick={() => startEdit(q)}>Edit</button>
+                      <hr />
                       <button
                         onClick={() => deleteSingleQuestion(q.id)}
                         style={{ color: "red" }}
