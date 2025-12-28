@@ -8,12 +8,13 @@ import {
 import {
   collection,
   getDocs,
+  getDoc,
   query,
   where,
   setDoc,
-  getDoc,
   doc,
   updateDoc,
+  onSnapshot,
 } from "firebase/firestore";
 import { auth, db } from "./../firebase";
 import "./../App.css";
@@ -27,6 +28,10 @@ function ExamApplication() {
   const [answers, setAnswers] = useState({});
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // 🔑 THIS is the missing link earlier
+  const [activeExamId, setActiveExamId] = useState(null);
 
   /* ================= AUTH ================= */
 
@@ -47,38 +52,36 @@ function ExamApplication() {
     setCurrentIndex(0);
     setTimeLeft(null);
     setExamIdInput("");
+    setActiveExamId(null);
     localStorage.removeItem("activeExamId");
   };
 
-  /* ================= RESUME ================= */
+  /* ================= RESTORE ACTIVE EXAM ON REFRESH ================= */
 
   useEffect(() => {
     if (!user) return;
+    const stored = localStorage.getItem("activeExamId");
+    if (stored) {
+      setActiveExamId(stored);
+    }
+  }, [user]);
 
-    async function resumeExam() {
-      const stored = localStorage.getItem("activeExamId");
-      if (!stored) return;
+  /* ================= REALTIME EXAM LISTENER ================= */
 
-      const ref = doc(db, "exams", `${stored}_${user.uid}`);
-      const snap = await getDoc(ref);
+  useEffect(() => {
+    if (!user || !activeExamId) return;
 
-      if (!snap.exists()) {
-        localStorage.removeItem("activeExamId");
-        return;
-      }
+    const examRef = doc(db, "exams", `${activeExamId}_${user.uid}`);
 
+    const unsub = onSnapshot(examRef, (snap) => {
+      if (!snap.exists()) return;
       const data = snap.data();
-      if (data.submitted) {
-        localStorage.removeItem("activeExamId");
-        return;
-      }
-
       setExam(data);
       setAnswers(data.answers || {});
-    }
+    });
 
-    resumeExam();
-  }, [user]);
+    return () => unsub();
+  }, [user, activeExamId]);
 
   /* ================= HELPERS ================= */
 
@@ -89,103 +92,127 @@ function ExamApplication() {
   /* ================= JOIN EXAM ================= */
 
   async function joinExam() {
-    if (!user) return setError("Please login");
-    if (!examIdInput) return setError("Enter Exam ID");
+  if (!user) return setError("Please login");
+  if (!examIdInput) return setError("Enter Exam ID");
 
-    setError("");
+  setError("");
 
-    const metaSnap = await getDocs(
-      query(collection(db, "exams_meta"), where("exam_id", "==", examIdInput)),
-    );
+  const examDocId = `${examIdInput}_${user.uid}`;
+  const examRef = doc(db, "exams", examDocId);
 
-    if (metaSnap.empty) return setError("Invalid Exam ID");
+  // 🔍 STEP 1: Check if exam already exists
+  const existingSnap = await getDoc(examRef);
 
-    const examMeta = metaSnap.docs[0].data();
-    if (!examMeta.active) return setError("Exam not active");
+  if (existingSnap.exists()) {
+    const existingExam = existingSnap.data();
 
-    /* 🔐 SECURITY: FETCH QUESTIONS BUT STRIP ANSWERS */
-    const qSnap = await getDocs(
-      query(
-        collection(db, "questions"),
-        where("course_id", "==", examMeta.course_id),
-      ),
-    );
-
-    let allQuestions = qSnap.docs.map((d) => {
-      const q = d.data();
-      return {
-        id: d.id,
-        question_text: q.question_text,
-        options: q.options,
-        question_type: q.question_type,
-        marks: q.marks,
-        difficulty: q.difficulty,
-        chapter: q.chapter,
-      };
-    });
-
-    if (!examMeta.question_types.includes("ALL")) {
-      allQuestions = allQuestions.filter((q) =>
-        examMeta.question_types.includes(q.question_type),
-      );
+    // ✅ Exam already finished → show results
+    if (existingExam.submitted) {
+      setActiveExamId(examIdInput);
+      setCurrentIndex(0);
+      return;
     }
 
-    if (!examMeta.chapters.includes("ALL")) {
-      allQuestions = allQuestions.filter((q) =>
-        examMeta.chapters.includes(q.chapter),
-      );
-    }
-
-    if (allQuestions.length < examMeta.total_questions)
-      return setError("Not enough questions");
-
-    const selectedQuestions = shuffle(allQuestions).slice(
-      0,
-      examMeta.total_questions,
-    );
-
-    const start = Date.now();
-    const end = start + examMeta.duration_minutes * 60 * 1000;
-
-    const examDoc = {
-      exam_id: examIdInput,
-      course_id: examMeta.course_id,
-      user_id: user.uid,
-      user_email: user.email || "",
-      user_name: user.displayName || "",
-      questions: selectedQuestions,
-      answers: {},
-      submitted: false,
-      started_at: start,
-      end_at: end,
-    };
-
-    const examDocId = `${examIdInput}_${user.uid}`;
-    await setDoc(doc(db, "exams", examDocId), examDoc);
-
-    localStorage.setItem("activeExamId", examIdInput);
-    setExam(examDoc);
-    setAnswers({});
+    // ✅ Exam in progress → resume
+    setActiveExamId(examIdInput);
     setCurrentIndex(0);
+    return;
   }
+
+  // 🆕 STEP 2: Fresh exam creation
+  const metaSnap = await getDocs(
+    query(collection(db, "exams_meta"), where("exam_id", "==", examIdInput))
+  );
+
+  if (metaSnap.empty) return setError("Invalid Exam ID");
+
+  const examMeta = metaSnap.docs[0].data();
+  if (!examMeta.active) return setError("Exam not active");
+
+  const qSnap = await getDocs(
+    query(
+      collection(db, "questions"),
+      where("course_id", "==", examMeta.course_id)
+    )
+  );
+
+  let allQuestions = qSnap.docs.map((d) => {
+    const q = d.data();
+    return {
+      id: d.id,
+      question_text: q.question_text,
+      options: q.options,
+      question_type: q.question_type,
+      marks: q.marks,
+      difficulty: q.difficulty,
+      chapter: q.chapter,
+    };
+  });
+
+  if (!examMeta.question_types.includes("ALL")) {
+    allQuestions = allQuestions.filter((q) =>
+      examMeta.question_types.includes(q.question_type)
+    );
+  }
+
+  if (!examMeta.chapters.includes("ALL")) {
+    allQuestions = allQuestions.filter((q) =>
+      examMeta.chapters.includes(q.chapter)
+    );
+  }
+
+  if (allQuestions.length < examMeta.total_questions) {
+    return setError("Not enough questions");
+  }
+
+  const selectedQuestions = shuffle(allQuestions).slice(
+    0,
+    examMeta.total_questions
+  );
+
+  const start = Date.now();
+  const end = start + examMeta.duration_minutes * 60 * 1000;
+
+  const examDoc = {
+    exam_id: examIdInput,
+    course_id: examMeta.course_id,
+    user_id: user.uid,
+    user_email: user.email || "",
+    user_name: user.displayName || "",
+    questions: selectedQuestions,
+    answers: {},
+    submitted: false,
+    status: "IN_PROGRESS",
+    started_at: start,
+    end_at: end,
+  };
+
+  await setDoc(examRef, examDoc);
+
+  localStorage.setItem("activeExamId", examIdInput);
+  setActiveExamId(examIdInput);
+  setCurrentIndex(0);
+}
+
 
   /* ================= TIMER ================= */
 
   useEffect(() => {
     if (!exam || exam.submitted) return;
 
-    const t = setInterval(() => {
+    const interval = setInterval(() => {
       const remaining = exam.end_at - Date.now();
+
       if (remaining <= 0) {
-        clearInterval(t);
+        clearInterval(interval);
         finalizeSubmission("auto");
       } else {
         setTimeLeft(Math.floor(remaining / 1000));
       }
     }, 1000);
 
-    return () => clearInterval(t);
-  }, [exam]);
+    return () => clearInterval(interval);
+  }, [exam?.end_at, exam?.submitted]);
 
   /* ================= ANSWERS ================= */
 
@@ -213,73 +240,37 @@ function ExamApplication() {
     persist({ ...answers, [currentIndex]: v });
   };
 
-  /* ================= GRADING (POST SUBMIT ONLY) ================= */
-
-  async function gradeExam(latestExam) {
-    const qSnap = await getDocs(
-      query(
-        collection(db, "questions"),
-        where("course_id", "==", latestExam.course_id),
-      ),
-    );
-
-    const answerMap = {};
-    qSnap.docs.forEach((d) => {
-      answerMap[d.id] = d.data();
-    });
-
-    let score = 0;
-
-    latestExam.questions.forEach((q, idx) => {
-      const student = latestExam.answers[idx];
-      if (student === undefined) return;
-
-      const correct = answerMap[q.id]?.correct_answer;
-
-      if (q.question_type === "MCQ") {
-        if (correct.includes(student[0])) score += q.marks || 1;
-      } else if (q.question_type === "MSQ") {
-        const c = new Set(correct);
-        const s = new Set(student || []);
-        if (c.size === s.size && [...c].every((x) => s.has(x)))
-          score += q.marks || 1;
-      } else if (q.question_type === "FILL_BLANK") {
-        if (
-          String(student).trim().toLowerCase() ===
-          String(correct).trim().toLowerCase()
-        )
-          score += q.marks || 1;
-      }
-    });
-
-    return score;
-  }
+  /* ================= SUBMIT ================= */
 
   async function finalizeSubmission(reason) {
-    if (!exam || exam.submitted) return;
+    if (!exam || exam.submitted || submitting) return;
 
-    const ref = doc(db, "exams", `${exam.exam_id}_${user.uid}`);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return;
+    setSubmitting(true);
 
-    const latest = snap.data();
-    const score = await gradeExam(latest);
+    try {
+      await updateDoc(doc(db, "exams", `${exam.exam_id}_${user.uid}`), {
+        submitted: true,
+        submitted_at: Date.now(),
+        submission_type: reason,
+        status: "SUBMITTED",
+      });
 
-    await updateDoc(ref, {
-      submitted: true,
-      submitted_at: Date.now(),
-      submission_type: reason,
-      score: score,
-    });
+      localStorage.removeItem("activeExamId");
+      setActiveExamId(null);
 
-    setExam({ ...latest, submitted: true, score });
-    localStorage.removeItem("activeExamId");
-    alert(reason === "auto" ? "Time up! Auto-submitted." : "Exam submitted.");
+      alert(
+        reason === "auto"
+          ? "Time is up! Exam auto-submitted."
+          : "Exam submitted successfully.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   /* ================= UI ================= */
 
-  const q = exam?.questions[currentIndex];
+  const q = exam?.questions?.[currentIndex];
 
   return (
     <div className="app-container">
@@ -288,12 +279,19 @@ function ExamApplication() {
       {!user && <button onClick={login}>Login with Google</button>}
       {user && <button onClick={logout}>Logout</button>}
 
+      <br />
+      <br />
+
       {!exam && user && (
         <>
           <input
             value={examIdInput}
             onChange={(e) => setExamIdInput(e.target.value)}
+            placeholder="Enter Exam ID"
           />
+          <br />
+          <br />
+          
           <button onClick={joinExam}>Join Exam</button>
           {error && <p className="error">{error}</p>}
         </>
@@ -344,12 +342,15 @@ function ExamApplication() {
           )}
 
           <br />
+          <br />
+
           <button
             disabled={currentIndex === 0}
             onClick={() => setCurrentIndex((i) => i - 1)}
           >
             Prev
           </button>
+
           <button
             disabled={currentIndex === exam.questions.length - 1}
             onClick={() => setCurrentIndex((i) => i + 1)}
@@ -358,13 +359,48 @@ function ExamApplication() {
           </button>
 
           {currentIndex === exam.questions.length - 1 && !exam.submitted && (
-            <button onClick={() => finalizeSubmission("manual")}>Submit</button>
+            <button
+              disabled={submitting}
+              onClick={() => finalizeSubmission("manual")}
+            >
+              Submit
+            </button>
           )}
 
-          {exam.submitted && (
-            <p>
-              <strong>Score:</strong> {exam.score}
-            </p>
+          {exam.status === "SUBMITTED" && <p>Evaluating your answers…</p>}
+
+          {exam.status === "EVALUATED" && (
+            <div className="success">
+              <br />
+              <h3>Result</h3>
+
+              <p>
+                <strong>Score:</strong> {exam.score} / {exam.max_score}
+              </p>
+
+              <p>
+                Correct: {exam.result_summary.correct}
+                <br />
+                Wrong: {exam.result_summary.wrong}
+                <br />
+                Unanswered: {exam.result_summary.unanswered}
+              </p>
+
+              <br />
+
+              <h4>Question-wise Result</h4>
+
+              {exam.question_results.map((res, i) => (
+                <div key={i}>
+                  <strong>Question {i + 1}:</strong>{" "}
+                  {res.is_correct ? "✅ Correct" : "❌ Wrong"}
+                  <br />
+                  Marks Awarded: {res.marks_awarded}
+                  <br />
+                  <br />
+                </div>
+              ))}
+            </div>
           )}
         </>
       )}
