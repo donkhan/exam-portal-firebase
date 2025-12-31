@@ -397,28 +397,43 @@ function ExamApplication() {
           <br />
           <br />
 
-          <button
-            disabled={currentIndex === 0}
-            onClick={() => setCurrentIndex((i) => i - 1)}
-          >
-            Prev
-          </button>
-
-          <button
-            disabled={currentIndex === exam.questions.length - 1}
-            onClick={() => setCurrentIndex((i) => i + 1)}
-          >
-            Next
-          </button>
-
-          {currentIndex === exam.questions.length - 1 && !exam.submitted && (
+          <div className="question-nav">
             <button
-              disabled={submitting}
-              onClick={() => finalizeSubmission("manual")}
+              disabled={currentIndex === 0}
+              onClick={() => setCurrentIndex((i) => i - 1)}
             >
-              Submit
+              Prev
             </button>
-          )}
+
+            <button
+              disabled={currentIndex === exam.questions.length - 1}
+              onClick={() => setCurrentIndex((i) => i + 1)}
+            >
+              Next
+            </button>
+
+            <select
+              value={currentIndex}
+              disabled={exam.submitted}
+              onChange={(e) => setCurrentIndex(Number(e.target.value))}
+              className="question-jump"
+            >
+              {exam.questions.map((_, i) => (
+                <option key={i} value={i}>
+                  Q{i + 1}
+                </option>
+              ))}
+            </select>
+
+            {currentIndex === exam.questions.length - 1 && !exam.submitted && (
+              <button
+                disabled={submitting}
+                onClick={() => finalizeSubmission("manual")}
+              >
+                Submit
+              </button>
+            )}
+          </div>
 
           {exam.status === "SUBMITTED" && <p>Evaluating your answers…</p>}
 
