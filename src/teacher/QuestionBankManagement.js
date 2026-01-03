@@ -95,6 +95,20 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
 
       let count = 0;
 
+      const invalid = data.questions.filter(
+        (q) => q.question_type === "NUMERICAL",
+      );
+
+      if (invalid.length > 0) {
+        setStatus(
+          `Upload failed. ${invalid.length} question(s) use invalid type NUMERICAL.`,
+        );
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+        return;
+      }
+
       for (const q of data.questions) {
         if (
           !q.chapter ||
