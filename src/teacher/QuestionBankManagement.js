@@ -11,9 +11,11 @@ import {
 } from "firebase/firestore";
 import { db } from "./../firebase";
 import { stripJsonComments } from "../utils/jsonutils";
-import JsonPasteUpload from "./JsonPasteUpload";
+import QuestionUploadPanel from "./QuestionUploadPanel";
 import QuestionsTable from "./QuestionsTable";
-
+import QuestionsDownload from "./QuestionsDownload";
+import QuestionsDeleteAll from "./QuestionsDeleteAll";
+import { useQuestionEdit } from "./useQuestionEdit";
 
 function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
   const [courses, setCourses] = useState([]);
@@ -22,10 +24,12 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
-  const [editingId, setEditingId] = useState(null);
-  const [editData, setEditData] = useState({});
+
   const [showAddForm, setShowAddForm] = useState(false);
   const fileInputRef = useRef(null);
+
+  const { editingId, editData, setEditData, startEdit, cancelEdit, saveEdit } =
+    useQuestionEdit(setQuestions);
 
   const [newQuestion, setNewQuestion] = useState({
     chapter: "",
@@ -80,120 +84,79 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
   /* ================= UPLOAD QUESTIONS ================= */
 
   const uploadQuestionsFromData = async (data) => {
-  if (!data.course_id || !Array.isArray(data.questions)) {
-    alert("Invalid JSON format");
-    return;
-  }
-
-  const invalid = data.questions.filter(
-    (q) => q.question_type === "NUMERICAL",
-  );
-
-  if (invalid.length > 0) {
-    setStatus(
-      `Upload failed. ${invalid.length} question(s) use invalid type NUMERICAL.`,
-    );
-    return;
-  }
-
-  let count = 0;
-
-  for (const q of data.questions) {
-    if (
-      !q.chapter ||
-      !q.question_type ||
-      !q.question_text ||
-      !q.marks ||
-      !q.correct_answer
-    ) {
-      alert("Invalid question entry detected");
-      setStatus("Failed to read");
+    if (!data.course_id || !Array.isArray(data.questions)) {
+      alert("Invalid JSON format");
       return;
     }
 
-    await addDoc(collection(db, "questions"), {
-      course_id: data.course_id,
-      question_id: crypto.randomUUID(),
-      chapter: q.chapter,
-      difficulty: q.difficulty,
-      question_type: q.question_type,
-      question_text: q.question_text,
-      options: q.options || {},
-      correct_answer: q.correct_answer || [],
-      marks: q.marks,
-      created_at: Date.now(),
-    });
+    const invalid = data.questions.filter(
+      (q) => q.question_type === "NUMERICAL",
+    );
 
-    count++;
-  }
-
-  setStatus(`✅ ${count} questions uploaded successfully`);
-
-  if (selectedCourse === data.course_id) {
-    loadQuestions(selectedCourse);
-  }
-};
-
-const handleFileUpload = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  try {
-    setStatus("Reading file...");
-    const text = await file.text();
-    const data = JSON.parse(stripJsonComments(text));
-
-    await uploadQuestionsFromData(data);
-  } catch (err) {
-    console.error(err);
-    alert("Error uploading questions " + err);
-    setStatus("❌ Upload failed");
-  }
-
-  if (fileInputRef.current) {
-    fileInputRef.current.value = "";
-  }
-};
-
-
-  const deleteAllQuestions = async () => {
-    if (!selectedCourse) {
-      alert("Please select a course first");
+    if (invalid.length > 0) {
+      setStatus(
+        `Upload failed. ${invalid.length} question(s) use invalid type NUMERICAL.`,
+      );
       return;
     }
-
-    const confirm1 = window.confirm(
-      `Are you sure you want to DELETE ALL questions for course ${selectedCourse}?`,
-    );
-
-    if (!confirm1) return;
-
-    const confirm2 = window.prompt(
-      `Type DELETE to confirm permanent deletion of ALL questions for ${selectedCourse}`,
-    );
-
-    if (confirm2 !== "DELETE") {
-      alert("Deletion cancelled");
-      return;
-    }
-
-    setStatus("Deleting questions...");
-
-    const q = query(
-      collection(db, "questions"),
-      where("course_id", "==", selectedCourse),
-    );
-
-    const snap = await getDocs(q);
 
     let count = 0;
-    for (const docSnap of snap.docs) {
-      await deleteDoc(doc(db, "questions", docSnap.id));
+
+    for (const q of data.questions) {
+      if (
+        !q.chapter ||
+        !q.question_type ||
+        !q.question_text ||
+        !q.marks ||
+        !q.correct_answer
+      ) {
+        alert("Invalid question entry detected");
+        setStatus("Failed to read");
+        return;
+      }
+
+      await addDoc(collection(db, "questions"), {
+        course_id: data.course_id,
+        question_id: crypto.randomUUID(),
+        chapter: q.chapter,
+        difficulty: q.difficulty,
+        question_type: q.question_type,
+        question_text: q.question_text,
+        options: q.options || {},
+        correct_answer: q.correct_answer || [],
+        marks: q.marks,
+        created_at: Date.now(),
+      });
+
       count++;
     }
 
-    setQuestions([]);
-    setStatus(`❌ ${count} questions permanently deleted`);
+    setStatus(`✅ ${count} questions uploaded successfully`);
+
+    if (selectedCourse === data.course_id) {
+      loadQuestions(selectedCourse);
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setStatus("Reading file...");
+      const text = await file.text();
+      const data = JSON.parse(stripJsonComments(text));
+
+      await uploadQuestionsFromData(data);
+    } catch (err) {
+      console.error(err);
+      alert("Error uploading questions " + err);
+      setStatus("❌ Upload failed");
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const deleteSingleQuestion = async (questionId) => {
@@ -213,83 +176,6 @@ const handleFileUpload = async (e) => {
       alert("Failed to delete question");
     }
   };
-
-  const downloadQuestions = () => {
-    if (!selectedCourse) {
-      alert("Please select a course first");
-      return;
-    }
-
-    if (questions.length === 0) {
-      alert("No questions to download for this course");
-      return;
-    }
-
-    const exportData = {
-      course_id: selectedCourse,
-      questions: questions.map((q) => {
-        // IMPORTANT: strip Firestore-only fields
-        const { id, created_at, ...rest } = q;
-        return rest;
-      }),
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-      type: "application/json",
-    });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-
-    a.href = url;
-    a.download = `questions_${selectedCourse}.json`;
-    a.click();
-
-    URL.revokeObjectURL(url);
-  };
-
-  const startEdit = (question) => {
-    setEditingId(question.id);
-    setEditData({
-      chapter: question.chapter,
-      difficulty: question.difficulty || "",
-      question_text: question.question_text,
-      options: question.options || {},
-      correct_answer: question.correct_answer || [],
-      marks: question.marks,
-    });
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditData({});
-  };
-
-  const saveEdit = async (questionId) => {
-    try {
-      await updateDoc(doc(db, "questions", questionId), {
-        chapter: editData.chapter,
-        difficulty: editData.difficulty,
-        question_text: editData.question_text,
-        options: editData.options,
-        correct_answer: editData.correct_answer,
-        marks: editData.marks,
-      });
-
-      // Update UI immediately
-      setQuestions((prev) =>
-        prev.map((q) => (q.id === questionId ? { ...q, ...editData } : q)),
-      );
-
-      cancelEdit();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to update question");
-    }
-  };
-
-  
-
 
   const saveNewQuestion = async () => {
     if (
@@ -333,24 +219,22 @@ const handleFileUpload = async (e) => {
     }
   };
 
-  
   const handleJsonQuestions = async (questions) => {
-  console.log("Imported questions:", questions);
+    console.log("Imported questions:", questions);
 
-  const data = {
-    course_id: selectedCourse, // or force user to choose
-    questions: questions,
+    const data = {
+      course_id: selectedCourse, // or force user to choose
+      questions: questions,
+    };
+
+    try {
+      setStatus("Uploading pasted questions...");
+      await uploadQuestionsFromData(data);
+    } catch (err) {
+      console.error(err);
+      alert("Error uploading pasted questions");
+    }
   };
-
-  try {
-    setStatus("Uploading pasted questions...");
-    await uploadQuestionsFromData(data);
-  } catch (err) {
-    console.error(err);
-    alert("Error uploading pasted questions");
-  }
-};
-
 
   /* ================= UI ================= */
 
@@ -508,61 +392,39 @@ const handleFileUpload = async (e) => {
 
       {selectedCourse && (
         <div style={{ marginBottom: "15px", display: "flex", gap: "10px" }}>
-          <button
-            onClick={downloadQuestions}
-            style={{
-              background: "#1976d2",
-              color: "white",
-              padding: "8px 12px",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            ⬇️ Download Questions (JSON)
-          </button>
+          <QuestionsDownload
+            selectedCourse={selectedCourse}
+            questions={questions}
+          />
 
-          <button
-            onClick={deleteAllQuestions}
-            style={{
-              background: "#b00020",
-              color: "white",
-              padding: "8px 12px",
-              border: "none",
-              cursor: "pointer",
+          <QuestionsDeleteAll
+            selectedCourse={selectedCourse}
+            onAfterDelete={() => {
+              setQuestions([]);
+              setStatus("❌ All questions deleted");
             }}
-          >
-            🚨 Delete ALL Questions for {selectedCourse}
-          </button>
+          />
         </div>
       )}
 
-      {/* UPLOAD */}
-      <div style={{ marginBottom: "20px" }}>
-        <strong>Upload Questions (JSON):</strong>
-        <br />
-        <input
-          type="file"
-          accept=".json"
-          onChange={handleFileUpload}
-          ref={fileInputRef}
-        />
-        {status && <p>{status}</p>}
-      </div>
-      <JsonPasteUpload onQuestionsReady={handleJsonQuestions} />
-      <br></br>
+      <QuestionUploadPanel
+        onFileUpload={handleFileUpload}
+        fileInputRef={fileInputRef}
+        status={status}
+        onJsonQuestions={handleJsonQuestions}
+      />
 
       <QuestionsTable
-  loading={loading}
-  questions={questions}
-  editingId={editingId}
-  editData={editData}
-  setEditData={setEditData}
-  startEdit={startEdit}
-  cancelEdit={cancelEdit}
-  saveEdit={saveEdit}
-  deleteSingleQuestion={deleteSingleQuestion}
-/>
-
+        loading={loading}
+        questions={questions}
+        editingId={editingId}
+        editData={editData}
+        setEditData={setEditData}
+        startEdit={startEdit}
+        cancelEdit={cancelEdit}
+        saveEdit={saveEdit}
+        deleteSingleQuestion={deleteSingleQuestion}
+      />
     </div>
   );
 }
