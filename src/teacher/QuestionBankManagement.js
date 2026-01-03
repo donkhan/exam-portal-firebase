@@ -10,6 +10,7 @@ import {
   doc,
 } from "firebase/firestore";
 import { db } from "./../firebase";
+import { stripJsonComments } from "../utils/jsonutils";
 
 function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
   const [courses, setCourses] = useState([]);
@@ -82,7 +83,7 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
     try {
       setStatus("Reading file...");
       const text = await file.text();
-      const data = JSON.parse(text);
+      const data = JSON.parse(stripJsonComments(text));
 
       if (!data.course_id || !Array.isArray(data.questions)) {
         alert("Invalid JSON format");
@@ -299,6 +300,9 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
       alert("Failed to update question");
     }
   };
+
+  
+
 
   const saveNewQuestion = async () => {
     if (
