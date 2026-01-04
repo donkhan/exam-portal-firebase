@@ -17,6 +17,7 @@ import { useQuestionEdit } from "./useQuestionEdit";
 import { useQuestionDelete } from "./useQuestionDelete";
 import SingleQuestionAdd from "./SingleQuestionAdd";
 
+
 function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(fixedCourseId || "");
@@ -29,8 +30,7 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
     useQuestionEdit(setQuestions);
   const { deleteSingleQuestion } = useQuestionDelete(setQuestions);
 
-
-  
+ 
   /* ================= LOAD COURSES ================= */
 
   useEffect(() => {
@@ -63,18 +63,26 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
     setLoading(false);
   }
 
+  
+
   useEffect(() => {
-    if (!selectedCourse) {
-      setQuestions([]);
-      return;
-    }
-    loadQuestions(selectedCourse);
-  }, [selectedCourse]);
+  loadQuestions(selectedCourse);
+  
+}, [selectedCourse]);
+
 
   /* ================= UPLOAD QUESTIONS ================= */
 
   const uploadQuestionsFromData = async (data) => {
-    if (!data.course_id || !Array.isArray(data.questions)) {
+    const effectiveCourseId = selectedCourse || data.course_id;
+
+    if (!effectiveCourseId) {
+      alert("Please select a course or provide course_id in the JSON.");
+      setStatus("❌ Upload failed: Course not specified");
+      return;
+    }
+
+    if (!Array.isArray(data.questions)) {
       alert("Invalid JSON format");
       return;
     }
@@ -106,7 +114,7 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
       }
 
       await addDoc(collection(db, "questions"), {
-        course_id: data.course_id,
+        course_id: effectiveCourseId,
         question_id: crypto.randomUUID(),
         chapter: q.chapter,
         difficulty: q.difficulty,
@@ -123,9 +131,8 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
 
     setStatus(`✅ ${count} questions uploaded successfully`);
 
-    if (selectedCourse === data.course_id) {
-      loadQuestions(selectedCourse);
-    }
+    loadQuestions(effectiveCourseId);
+    
   };
 
   const handleFileUpload = async (e) => {
@@ -148,8 +155,6 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
       fileInputRef.current.value = "";
     }
   };
-
-  
 
   const handleJsonQuestions = async (questions) => {
     console.log("Imported questions:", questions);
@@ -180,8 +185,12 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
       <hr />
       {/* COURSE SELECT */}
 
+
       {selectedCourse && (
+      
+        
         <div style={{ marginBottom: "15px", display: "flex", gap: "10px" }}>
+          
           <QuestionsDownload
             selectedCourse={selectedCourse}
             questions={questions}
@@ -196,6 +205,7 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
           />
         </div>
       )}
+
 
       <SingleQuestionAdd
         selectedCourse={selectedCourse}
