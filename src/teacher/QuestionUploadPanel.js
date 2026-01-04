@@ -25,7 +25,7 @@ function QuestionUploadPanel({
 
       <JsonPasteUpload onQuestionsReady={onJsonQuestions} 
         externalText={jsonText}
-        onClearExternalText={() => setJsonText("")}
+        
        />
     </div>
   );

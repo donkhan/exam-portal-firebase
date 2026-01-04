@@ -27,6 +27,8 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
   const { deleteSingleQuestion } = useQuestionDelete(setQuestions);
   const [jsonText, setJsonText] = useState("");
 
+
+
   /* ================= LOAD COURSES ================= */
 
   useEffect(() => {

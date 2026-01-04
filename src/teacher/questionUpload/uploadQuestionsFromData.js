@@ -25,17 +25,6 @@ export async function uploadQuestionsFromData({
     return false;
   }
 
-  const invalid = data.questions.filter(
-    (q) => q.question_type === "NUMERICAL"
-  );
-
-  if (invalid.length > 0) {
-    setStatus(
-      `Upload failed. ${invalid.length} question(s) use invalid type NUMERICAL.`
-    );
-    return false;
-  }
-
   let count = 0;
 
   for (const q of data.questions) {
@@ -50,6 +39,7 @@ export async function uploadQuestionsFromData({
       setStatus("❌ Failed to read");
       return;
     }
+    if(q.question_type === 'NUMERICAL') q.question_type = 'FILL_BLANK';
 
     await addDoc(collection(db, "questions"), {
       course_id: effectiveCourseId,
