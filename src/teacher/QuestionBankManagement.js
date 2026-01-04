@@ -2,13 +2,8 @@ import { useEffect, useState, useRef } from "react";
 import {
   collection,
   getDocs,
-  query,
-  where,
-  addDoc,
-  doc,
 } from "firebase/firestore";
 import { db } from "./../firebase";
-import { stripJsonComments } from "../utils/jsonutils";
 import QuestionUploadPanel from "./QuestionUploadPanel";
 import QuestionsTable from "./QuestionsTable";
 import QuestionsDownload from "./QuestionsDownload";
@@ -58,7 +53,6 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
       fileInputRef,
     });
     if (text) {
-      //alert(text);
       setJsonText(text); // 👈 feeds JsonPasteUpload
     }
   };
