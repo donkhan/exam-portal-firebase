@@ -17,6 +17,9 @@ import { useQuestionEdit } from "./useQuestionEdit";
 import { useQuestionDelete } from "./useQuestionDelete";
 import SingleQuestionAdd from "./SingleQuestionAdd";
 import { useQuestions } from "./useQuestions";
+import { handleQuestionFileUpload } from "./questionUpload/fileUploadHandler";
+import { handlePastedQuestions } from "./questionUpload/jsonPasteHandler";
+import { uploadQuestionsFromData } from "./questionUpload/uploadQuestionsFromData";
 
 function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
   const [courses, setCourses] = useState([]);
@@ -27,6 +30,7 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
   const { editingId, editData, setEditData, startEdit, cancelEdit, saveEdit } =
     useQuestionEdit(setQuestions);
   const { deleteSingleQuestion } = useQuestionDelete(setQuestions);
+  const [jsonText, setJsonText] = useState("");
 
   /* ================= LOAD COURSES ================= */
 
@@ -36,7 +40,6 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
       const list = snap.docs.map((doc) => doc.data());
       setCourses(list);
     }
-
     loadCourses();
   }, []);
 
@@ -48,102 +51,27 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
 
   /* ================= UPLOAD QUESTIONS ================= */
 
-  const uploadQuestionsFromData = async (data) => {
-    const effectiveCourseId = selectedCourse || data.course_id;
-
-    if (!effectiveCourseId) {
-      alert("Please select a course or provide course_id in the JSON.");
-      setStatus("❌ Upload failed: Course not specified");
-      return;
-    }
-
-    if (!Array.isArray(data.questions)) {
-      alert("Invalid JSON format");
-      return;
-    }
-
-    const invalid = data.questions.filter(
-      (q) => q.question_type === "NUMERICAL",
-    );
-
-    if (invalid.length > 0) {
-      setStatus(
-        `Upload failed. ${invalid.length} question(s) use invalid type NUMERICAL.`,
-      );
-      return;
-    }
-
-    let count = 0;
-
-    for (const q of data.questions) {
-      if (
-        !q.chapter ||
-        !q.question_type ||
-        !q.question_text ||
-        !q.marks ||
-        !q.correct_answer
-      ) {
-        alert("Invalid question entry detected");
-        setStatus("Failed to read");
-        return;
-      }
-
-      await addDoc(collection(db, "questions"), {
-        course_id: effectiveCourseId,
-        question_id: crypto.randomUUID(),
-        chapter: q.chapter,
-        difficulty: q.difficulty,
-        question_type: q.question_type,
-        question_text: q.question_text,
-        options: q.options || {},
-        correct_answer: q.correct_answer || [],
-        marks: q.marks,
-        created_at: Date.now(),
-      });
-
-      count++;
-    }
-
-    setStatus(`✅ ${count} questions uploaded successfully`);
-
-    loadQuestions(effectiveCourseId);
-  };
-
   const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    try {
-      setStatus("Reading file...");
-      const text = await file.text();
-      const data = JSON.parse(stripJsonComments(text));
-
-      await uploadQuestionsFromData(data);
-    } catch (err) {
-      console.error(err);
-      alert("Error uploading questions " + err);
-      setStatus("❌ Upload failed");
-    }
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+    const text = await handleQuestionFileUpload({
+      event: e,
+      setStatus,
+      fileInputRef,
+    });
+    if (text) {
+      //alert(text);
+      setJsonText(text); // 👈 feeds JsonPasteUpload
     }
   };
 
   const handleJsonQuestions = async (questions) => {
-    console.log("Imported questions:", questions);
-
-    const data = {
-      course_id: selectedCourse, // or force user to choose
-      questions: questions,
-    };
-
-    try {
-      setStatus("Uploading pasted questions...");
-      await uploadQuestionsFromData(data);
-    } catch (err) {
-      console.error(err);
-      alert("Error uploading pasted questions");
+    const success = await handlePastedQuestions({
+      questions,
+      selectedCourse,
+      uploadQuestionsFromData,
+      setStatus,
+    });
+    if (success) {
+      loadQuestions(selectedCourse); // 👈 SINGLE source of truth
     }
   };
 
@@ -186,6 +114,7 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
         fileInputRef={fileInputRef}
         status={status}
         onJsonQuestions={handleJsonQuestions}
+        jsonText={jsonText}
       />
 
       <QuestionsTable

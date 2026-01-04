@@ -1,5 +1,6 @@
-import { useState } from "react";
 import "./JsonPasteUpload.css";
+import { useState, useEffect } from "react";
+
 
 
 /**
@@ -11,10 +12,17 @@ import "./JsonPasteUpload.css";
  * - Validates structure
  * - Emits clean questions array
  */
-export default function JsonPasteUpload({ onQuestionsReady }) {
-  const [rawText, setRawText] = useState("");
+export default function JsonPasteUpload({ onQuestionsReady, externalText,onClearExternalText }) {
+ const [rawText, setRawText] = useState("");
   const [error, setError] = useState("");
   const [preview, setPreview] = useState(null);
+
+  useEffect(() => {
+  setRawText(externalText || "");
+  setError("");
+  setPreview(null);
+}, [externalText]);
+
 
   // --- Remove // and /* */ comments (JSONC → JSON)
   const stripComments = (text) => {
@@ -68,7 +76,11 @@ export default function JsonPasteUpload({ onQuestionsReady }) {
     onQuestionsReady(preview);
     setRawText("");
     setPreview(null);
+    onClearExternalText?.();
   };
+
+  
+
 
   return (
     <div className="json-paste-box">

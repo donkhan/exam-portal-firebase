@@ -6,6 +6,8 @@ function QuestionUploadPanel({
   fileInputRef,
   status,
   onJsonQuestions,
+  jsonText,
+  setJsonText,
 }) {
   return (
     <div style={{ marginBottom: "20px" }}>
@@ -21,7 +23,10 @@ function QuestionUploadPanel({
 
       {status && <p>{status}</p>}
 
-      <JsonPasteUpload onQuestionsReady={onJsonQuestions} />
+      <JsonPasteUpload onQuestionsReady={onJsonQuestions} 
+        externalText={jsonText}
+        onClearExternalText={() => setJsonText("")}
+       />
     </div>
   );
 }
