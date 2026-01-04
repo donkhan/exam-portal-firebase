@@ -16,21 +16,18 @@ import QuestionsDeleteAll from "./QuestionsDeleteAll";
 import { useQuestionEdit } from "./useQuestionEdit";
 import { useQuestionDelete } from "./useQuestionDelete";
 import SingleQuestionAdd from "./SingleQuestionAdd";
-
+import { useQuestions } from "./useQuestions";
 
 function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(fixedCourseId || "");
-  const [questions, setQuestions] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const fileInputRef = useRef(null);
-
+  const { questions, loading, setQuestions, loadQuestions } = useQuestions();
   const { editingId, editData, setEditData, startEdit, cancelEdit, saveEdit } =
     useQuestionEdit(setQuestions);
   const { deleteSingleQuestion } = useQuestionDelete(setQuestions);
 
- 
   /* ================= LOAD COURSES ================= */
 
   useEffect(() => {
@@ -45,31 +42,9 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
 
   /* ================= LOAD QUESTIONS ================= */
 
-  async function loadQuestions(courseId) {
-    setLoading(true);
-
-    const q = query(
-      collection(db, "questions"),
-      where("course_id", "==", courseId),
-    );
-
-    const snap = await getDocs(q);
-    const list = snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    setQuestions(list);
-    setLoading(false);
-  }
-
-  
-
   useEffect(() => {
-  loadQuestions(selectedCourse);
-  
-}, [selectedCourse]);
-
+    loadQuestions(selectedCourse);
+  }, [selectedCourse]);
 
   /* ================= UPLOAD QUESTIONS ================= */
 
@@ -132,7 +107,6 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
     setStatus(`✅ ${count} questions uploaded successfully`);
 
     loadQuestions(effectiveCourseId);
-    
   };
 
   const handleFileUpload = async (e) => {
@@ -185,12 +159,8 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
       <hr />
       {/* COURSE SELECT */}
 
-
       {selectedCourse && (
-      
-        
         <div style={{ marginBottom: "15px", display: "flex", gap: "10px" }}>
-          
           <QuestionsDownload
             selectedCourse={selectedCourse}
             questions={questions}
@@ -205,7 +175,6 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
           />
         </div>
       )}
-
 
       <SingleQuestionAdd
         selectedCourse={selectedCourse}
