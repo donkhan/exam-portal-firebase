@@ -15,33 +15,35 @@ export default function ExamResults({ examId, onBack }) {
   const user = auth.currentUser;
 
   /* ---------- LOAD RESULTS FOR ONE EXAM ---------- */
-  useEffect(() => {
+  const loadResults = async () => {
     if (!examId) {
+      setAttempts([]);
       setLoading(false);
       return;
     }
 
-    async function loadResults() {
-      try {
-        const q = query(
-          collection(db, "exams"),
-          where("exam_id", "==", examId)
-        );
+    setLoading(true);
+    try {
+      const q = query(
+        collection(db, "exams"),
+        where("exam_id", "==", examId)
+      );
 
-        const snap = await getDocs(q);
-        const data = snap.docs.map((d) => ({
-          id: d.id,
-          ...d.data(),
-        }));
+      const snap = await getDocs(q);
+      const data = snap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }));
 
-        setAttempts(data);
-      } catch (err) {
-        console.error("Failed to load results:", err);
-      } finally {
-        setLoading(false);
-      }
+      setAttempts(data);
+    } catch (err) {
+      console.error("Failed to load results:", err);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  useEffect(() => {
     loadResults();
   }, [examId]);
 
@@ -124,7 +126,10 @@ export default function ExamResults({ examId, onBack }) {
       {selectedAttempt && (
         <StudentAttemptDetails
           attempt={selectedAttempt}
-          onBack={() => setSelectedAttempt(null)}
+          onBack={async () => {
+            await loadResults();       // 🔥 REFRESH after delete
+            setSelectedAttempt(null);  // back to list
+          }}
         />
       )}
     </div>
