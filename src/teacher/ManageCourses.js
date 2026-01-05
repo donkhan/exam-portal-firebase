@@ -10,6 +10,7 @@ import {
 import { db } from "../firebase";
 import QuestionBankManagement from "./QuestionBankManagement";
 import ExamManagement from "./ExamManagement";
+import { fetchCourses } from "../services/courseService";
 
 function ManageCourses({ onBack }) {
   const [courses, setCourses] = useState([]);
@@ -35,17 +36,13 @@ function ManageCourses({ onBack }) {
   const [createExamForCourse, setCreateExamForCourse] = useState(null);
 
   useEffect(() => {
-    fetchCourses();
+    loadCourses();
   }, []);
 
-  const fetchCourses = async () => {
+  const loadCourses = async () => {
     setLoading(true);
     try {
-      const snapshot = await getDocs(collection(db, "courses"));
-      const list = snapshot.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      }));
+      const list = await fetchCourses(db);
       setCourses(list);
     } catch (err) {
       console.error("Error fetching courses:", err);
@@ -75,7 +72,7 @@ function ManageCourses({ onBack }) {
       setNewName("");
       setNewActive(true);
 
-      fetchCourses();
+      loadCourses();
     } catch (err) {
       alert("Add failed (course may already exist).");
       console.error(err);
@@ -91,7 +88,7 @@ function ManageCourses({ onBack }) {
 
     try {
       await deleteDoc(doc(db, "courses", courseId));
-      fetchCourses();
+      loadCourses();
     } catch (err) {
       alert("Delete failed.");
       console.error(err);
@@ -118,7 +115,7 @@ function ManageCourses({ onBack }) {
         active: editActive,
       });
       cancelEdit();
-      fetchCourses();
+      loadCourses();
     } catch (err) {
       alert("Update failed.");
       console.error(err);
