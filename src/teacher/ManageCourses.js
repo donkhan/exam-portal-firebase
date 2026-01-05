@@ -1,16 +1,15 @@
 import { useEffect, useState } from "react";
-import {
-  collection,
-  getDocs,
-  deleteDoc,
-  doc,
-  updateDoc,
-  setDoc,
-} from "firebase/firestore";
 import { db } from "../firebase";
 import QuestionBankManagement from "./QuestionBankManagement";
 import ExamManagement from "./ExamManagement";
+import CourseTable from "./../components/CourseTable";
+
 import { fetchCourses } from "../services/courseService";
+import {
+  confirmAndDeleteCourse,
+  saveEditedCourse,
+  createCourse,
+} from "../actions/courseActions";
 
 function ManageCourses({ onBack }) {
   const [courses, setCourses] = useState([]);
@@ -46,54 +45,37 @@ function ManageCourses({ onBack }) {
       setCourses(list);
     } catch (err) {
       console.error("Error fetching courses:", err);
+      alert(
+        "Unable to load courses.\n\n" +
+          "Please check your internet connection and refresh the page." +
+          err,
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  /* ---------- ADD COURSE ---------- */
-  const handleAdd = async () => {
-    if (!newId.trim() || !newName.trim()) {
-      alert("Course ID and Course Name are required.");
-      return;
-    }
+  const handleAdd = () =>
+    createCourse({
+      db,
+      courseId: newId,
+      courseName: newName,
+      active: newActive,
+      onSuccess: () => {
+        setShowAdd(false);
+        setNewId("");
+        setNewName("");
+        setNewActive(true);
+        loadCourses();
+      },
+    });
 
-    const courseId = newId.trim().toUpperCase();
-
-    try {
-      await setDoc(doc(db, "courses", courseId), {
-        course_id: courseId,
-        course_name: newName.trim(),
-        active: newActive,
-      });
-
-      setShowAdd(false);
-      setNewId("");
-      setNewName("");
-      setNewActive(true);
-
-      loadCourses();
-    } catch (err) {
-      alert("Add failed (course may already exist).");
-      console.error(err);
-    }
-  };
-
-  /* ---------- DELETE COURSE ---------- */
-  const handleDelete = async (courseId) => {
-    const ok = window.confirm(
-      `Are you sure you want to DELETE course "${courseId}"?\n\nThis cannot be undone.`,
-    );
-    if (!ok) return;
-
-    try {
-      await deleteDoc(doc(db, "courses", courseId));
-      loadCourses();
-    } catch (err) {
-      alert("Delete failed.");
-      console.error(err);
-    }
-  };
+  const handleDelete = (courseId) =>
+    confirmAndDeleteCourse({
+      db,
+      courseId,
+      onSuccess: loadCourses,
+    });
 
   /* ---------- EDIT COURSE ---------- */
   const startEdit = (course) => {
@@ -108,21 +90,18 @@ function ManageCourses({ onBack }) {
     setEditActive(true);
   };
 
-  const saveEdit = async (courseId) => {
-    try {
-      await updateDoc(doc(db, "courses", courseId), {
-        course_name: editName,
-        active: editActive,
-      });
-      cancelEdit();
-      loadCourses();
-    } catch (err) {
-      alert("Update failed.");
-      console.error(err);
-    }
-  };
+  const saveEdit = (courseId) =>
+    saveEditedCourse({
+      db,
+      courseId,
+      courseName: editName,
+      active: editActive,
+      onSuccess: () => {
+        cancelEdit();
+        loadCourses();
+      },
+    });
 
-  /* ---------- CREATE EXAM ---------- */
   if (createExamForCourse) {
     return (
       <ExamManagement
@@ -133,7 +112,6 @@ function ManageCourses({ onBack }) {
     );
   }
 
-  /* ---------- QUESTION BANK ---------- */
   if (viewQBForCourse) {
     return (
       <QuestionBankManagement
@@ -187,98 +165,23 @@ function ManageCourses({ onBack }) {
 
       {!loading && courses.length === 0 && <p>No courses found.</p>}
 
-      {!loading && courses.length > 0 && (
-        <table border="1" cellPadding="8">
-          <thead>
-            <tr>
-              <th>Course ID</th>
-              <th>Course Name</th>
-              <th>Active</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {courses.map((c) => (
-              <tr key={c.id}>
-                <td>{c.course_id}</td>
-
-                <td>
-                  {editingId === c.id ? (
-                    <input
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                    />
-                  ) : (
-                    c.course_name
-                  )}
-                </td>
-
-                <td>
-                  {editingId === c.id ? (
-                    <select
-                      value={editActive ? "true" : "false"}
-                      onChange={(e) => setEditActive(e.target.value === "true")}
-                    >
-                      <option value="true">YES</option>
-                      <option value="false">NO</option>
-                    </select>
-                  ) : c.active ? (
-                    "YES"
-                  ) : (
-                    "NO"
-                  )}
-                </td>
-
-                <td>
-                  <button
-                    onClick={() =>
-                      setViewQBForCourse({
-                        id: c.course_id,
-                        name: c.course_name,
-                      })
-                    }
-                    style={{ marginRight: "6px" }}
-                  >
-                    View Question Bank
-                  </button>
-
-                  <button
-                    onClick={() =>
-                      setCreateExamForCourse({
-                        id: c.course_id,
-                        name: c.course_name,
-                      })
-                    }
-                    style={{ marginRight: "6px" }}
-                  >
-                    Create Exam
-                  </button>
-
-                  {editingId === c.id ? (
-                    <>
-                      <button onClick={() => saveEdit(c.id)}>Save</button>
-                      <button onClick={cancelEdit}>Cancel</button>
-                    </>
-                  ) : (
-                    <>
-                      <button onClick={() => startEdit(c)}>Edit</button>
-                      <button
-                        onClick={() => handleDelete(c.id)}
-                        style={{ color: "red" }}
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {!loading && (
+        <CourseTable
+          courses={courses}
+          editingId={editingId}
+          editName={editName}
+          editActive={editActive}
+          onEditStart={startEdit}
+          onEditNameChange={setEditName}
+          onEditActiveChange={setEditActive}
+          onEditSave={saveEdit}
+          onEditCancel={cancelEdit}
+          onDelete={handleDelete}
+          onViewQB={setViewQBForCourse}
+          onCreateExam={setCreateExamForCourse}
+        />
       )}
     </div>
   );
 }
-
 export default ManageCourses;
