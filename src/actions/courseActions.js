@@ -1,4 +1,4 @@
-import { deleteCourse, updateCourse, addCourse } from "../services/courseService";
+import { deleteCourse, updateCourse, addCourse } from "../services/course.service";
 
 export async function confirmAndDeleteCourse({
   db,

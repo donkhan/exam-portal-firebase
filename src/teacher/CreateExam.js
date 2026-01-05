@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
 import { db } from "./../firebase";
+import { getChaptersForCourse } from "./../services/questions.service";
+import { createExamIfNotExists } from "./../services/exam.service";
 
 function CreateExam({ preselectedCourseId, preselectedCourseName, onBack }) {
   /* ---------- COURSE CONTEXT ---------- */
@@ -16,23 +18,9 @@ function CreateExam({ preselectedCourseId, preselectedCourseName, onBack }) {
   const [status, setStatus] = useState("");
   const [examId, setExamId] = useState("");
 
-  /* ================= LOAD CHAPTERS ================= */
-
   const loadChaptersForCourse = async (cid) => {
-    const q = query(collection(db, "questions"), where("course_id", "==", cid));
-
-    const snap = await getDocs(q);
-
-    const uniqueChapters = [
-      ...new Set(
-        snap.docs
-          .map((d) => d.data().chapter)
-          .filter(Boolean)
-          .map((ch) => ch.trim()),
-      ),
-    ];
-
-    setChapters(uniqueChapters.sort());
+    const chapters = await getChaptersForCourse(cid);
+    setChapters(chapters);
     setSelectedChapters([]);
   };
 
@@ -43,52 +31,43 @@ function CreateExam({ preselectedCourseId, preselectedCourseName, onBack }) {
     }
   }, [courseId]);
 
-  /* ================= CREATE EXAM ================= */
-
+  
   const createExam = async () => {
-    if (!courseId) {
-      alert("Course context missing. Please go back and retry.");
-      return;
-    }
+  
+  if (!examId) {
+    alert("Please enter Exam ID");
+    return;
+  }
 
-    if (!examId) {
-      alert("Please enter Exam ID");
-      return;
-    }
+  if (selectedChapters.length === 0) {
+    alert("Please select at least one chapter");
+    return;
+  }
 
-    if (selectedChapters.length === 0) {
-      alert("Please select at least one chapter");
-      return;
-    }
-
-    const existing = await getDocs(
-      query(collection(db, "exams_meta"), where("exam_id", "==", examId)),
-    );
-
-    if (!existing.empty) {
-      alert("Exam ID already exists. Choose a different one.");
-      return;
-    }
-
-    const examMeta = {
-      exam_id: examId,
-      course_id: preselectedCourseId,
-      course_name: preselectedCourseName, // 🔥 stored for clarity
-      chapters: selectedChapters,
-      question_types: ["MCQ", "FILL_BLANK", "MSQ"],
-      duration_minutes: Number(duration),
-      total_questions: Number(questionCount),
-      active: true,
-      created_at: Date.now(),
-    };
-
-    await addDoc(collection(db, "exams_meta"), examMeta);
-
-    setStatus(`✅ Exam created successfully.
-Exam ID: ${examId}
-Course: ${preselectedCourseName || courseId}
-Chapters: ${selectedChapters.join(", ")}`);
+  const examMeta = {
+    exam_id: examId,
+    course_id: preselectedCourseId,
+    course_name: preselectedCourseName,
+    chapters: selectedChapters,
+    question_types: ["MCQ", "FILL_BLANK", "MSQ"],
+    duration_minutes: Number(duration),
+    total_questions: Number(questionCount),
+    active: true,
+    created_at: Date.now(),
   };
+  const created = await createExamIfNotExists(examId, examMeta);
+  if (!created) {
+    alert(`❌ Exam ID "${examId}" already exists. Please choose a different ID.`);
+    return;
+  }
+
+  setStatus(`✅ Exam created successfully.
+  Exam ID: ${examId}
+  Course: ${preselectedCourseName || courseId}
+  Chapters: ${selectedChapters.join(", ")}`);
+
+};
+
 
   /* ================= UI ================= */
 

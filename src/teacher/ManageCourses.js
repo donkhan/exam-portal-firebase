@@ -4,7 +4,7 @@ import QuestionBankManagement from "./QuestionBankManagement";
 import ExamManagement from "./ExamManagement";
 import CourseTable from "./../components/CourseTable";
 
-import { fetchCourses } from "../services/courseService";
+import { fetchCourses } from "../services/course.service";
 import {
   confirmAndDeleteCourse,
   saveEditedCourse,
