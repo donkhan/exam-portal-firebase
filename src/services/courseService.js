@@ -1,9 +1,5 @@
 import { collection, getDocs, updateDoc, setDoc, deleteDoc, doc } from "firebase/firestore";
 
-/**
- * Fetch all courses from Firestore.
- * Returns: [{ id, course_id, course_name, active }]
- */
 export async function fetchCourses(db) {
   const snapshot = await getDocs(collection(db, "courses"));
 

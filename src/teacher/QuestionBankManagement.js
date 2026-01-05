@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "./../firebase";
 import QuestionUploadPanel from "./QuestionUploadPanel";
-import QuestionsTable from "./QuestionsTable";
+import QuestionsTable from "./../components/QuestionsTable";
 import QuestionsDownload from "./QuestionsDownload";
 import QuestionsDeleteAll from "./QuestionsDeleteAll";
 import { useQuestionEdit } from "./useQuestionEdit";
