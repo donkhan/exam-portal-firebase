@@ -2,36 +2,24 @@ import { useEffect, useState } from "react";
 import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
 import { db } from "./../firebase";
 
-function CreateExam({ onBack }) {
-  const [courses, setCourses] = useState([]);
-  const [courseId, setCourseId] = useState("");
+function CreateExam({ preselectedCourseId, preselectedCourseName, onBack }) {
+  /* ---------- COURSE CONTEXT ---------- */
+  const [courseId, setCourseId] = useState(preselectedCourseId);
 
+  /* ---------- CHAPTER STATE ---------- */
   const [chapters, setChapters] = useState([]);
   const [selectedChapters, setSelectedChapters] = useState([]);
 
+  /* ---------- EXAM META ---------- */
   const [duration, setDuration] = useState(20);
   const [questionCount, setQuestionCount] = useState(10);
   const [status, setStatus] = useState("");
   const [examId, setExamId] = useState("");
 
-  /* ================= LOAD COURSES ================= */
-
-  useEffect(() => {
-    async function loadCourses() {
-      const snap = await getDocs(collection(db, "courses"));
-      const list = snap.docs.map((doc) => doc.data());
-      setCourses(list);
-    }
-    loadCourses();
-  }, []);
-
   /* ================= LOAD CHAPTERS ================= */
 
-  const loadChaptersForCourse = async (courseId) => {
-    const q = query(
-      collection(db, "questions"),
-      where("course_id", "==", courseId),
-    );
+  const loadChaptersForCourse = async (cid) => {
+    const q = query(collection(db, "questions"), where("course_id", "==", cid));
 
     const snap = await getDocs(q);
 
@@ -48,12 +36,10 @@ function CreateExam({ onBack }) {
     setSelectedChapters([]);
   };
 
+  /* ---------- AUTO LOAD CHAPTERS ON ENTRY ---------- */
   useEffect(() => {
     if (courseId) {
       loadChaptersForCourse(courseId);
-    } else {
-      setChapters([]);
-      setSelectedChapters([]);
     }
   }, [courseId]);
 
@@ -61,7 +47,7 @@ function CreateExam({ onBack }) {
 
   const createExam = async () => {
     if (!courseId) {
-      alert("Please select a course");
+      alert("Course context missing. Please go back and retry.");
       return;
     }
 
@@ -86,7 +72,8 @@ function CreateExam({ onBack }) {
 
     const examMeta = {
       exam_id: examId,
-      course_id: courseId,
+      course_id: preselectedCourseId,
+      course_name: preselectedCourseName, // 🔥 stored for clarity
       chapters: selectedChapters,
       question_types: ["MCQ", "FILL_BLANK", "MSQ"],
       duration_minutes: Number(duration),
@@ -99,6 +86,7 @@ function CreateExam({ onBack }) {
 
     setStatus(`✅ Exam created successfully.
 Exam ID: ${examId}
+Course: ${preselectedCourseName || courseId}
 Chapters: ${selectedChapters.join(", ")}`);
   };
 
@@ -109,6 +97,20 @@ Chapters: ${selectedChapters.join(", ")}`);
       <h3>Create Exam</h3>
 
       <button onClick={onBack}>← Back</button>
+
+      {/* COURSE CONTEXT (READ-ONLY) */}
+      <div
+        style={{
+          marginTop: "10px",
+          marginBottom: "15px",
+          padding: "8px 12px",
+          background: "#f4f6f8",
+          border: "1px solid #dce3ea",
+          borderRadius: 4,
+        }}
+      >
+        <strong>Course:</strong> {preselectedCourseName || courseId}
+      </div>
 
       <hr />
 
@@ -129,26 +131,8 @@ Chapters: ${selectedChapters.join(", ")}`);
         </p>
       </div>
 
-      {/* COURSE */}
-      <div style={{ marginBottom: "10px" }}>
-        <label>
-          Course:&nbsp;
-          <select
-            value={courseId}
-            onChange={(e) => setCourseId(e.target.value)}
-          >
-            <option value="">-- Select --</option>
-            {courses.map((c) => (
-              <option key={c.course_id} value={c.course_id}>
-                {c.course_id} – {c.course_name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
       {/* CHAPTER SELECTION */}
-      {chapters.length > 0 && (
+      {chapters.length > 0 ? (
         <div style={{ marginBottom: "15px" }}>
           <strong>Select Chapters:</strong>
 
@@ -173,6 +157,8 @@ Chapters: ${selectedChapters.join(", ")}`);
             ))}
           </div>
         </div>
+      ) : (
+        <p style={{ color: "#666" }}>No chapters found for this course.</p>
       )}
 
       {/* DURATION */}

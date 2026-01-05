@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   collection,
   getDocs,
@@ -12,10 +11,7 @@ import { db } from "../firebase";
 import QuestionBankManagement from "./QuestionBankManagement";
 import ExamManagement from "./ExamManagement";
 
-
 function ManageCourses({ onBack }) {
-  const navigate = useNavigate();
-
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,10 +27,12 @@ function ManageCourses({ onBack }) {
   const [newActive, setNewActive] = useState(true);
 
   /* ---------- QUESTION BANK VIEW ---------- */
+  // will store: { id, name }
   const [viewQBForCourse, setViewQBForCourse] = useState(null);
-  /* ---------- CREATE EXAM VIEW ---------- */
-  const [createExamForCourse, setCreateExamForCourse] = useState(null);
 
+  /* ---------- CREATE EXAM VIEW ---------- */
+  // will store: { id, name }
+  const [createExamForCourse, setCreateExamForCourse] = useState(null);
 
   useEffect(() => {
     fetchCourses();
@@ -127,46 +125,35 @@ function ManageCourses({ onBack }) {
     }
   };
 
-  const handleCreateExam = (courseId) => {
-    setCreateExamForCourse(courseId);
-  };
+  /* ---------- CREATE EXAM ---------- */
+  if (createExamForCourse) {
+    return (
+      <ExamManagement
+        preselectedCourseId={createExamForCourse.id}
+        preselectedCourseName={createExamForCourse.name}
+        onBack={() => setCreateExamForCourse(null)}
+      />
+    );
+  }
 
-  
-
-
-  /* ================= UI ================= */
-
-  /* ---------- CREATE EXAM SUB-VIEW ---------- */
-if (createExamForCourse) {
-  return (
-    <ExamManagement
-      preselectedCourseId={createExamForCourse}
-      onBack={() => setCreateExamForCourse(null)}
-    />
-  );
-}
-
-
-  /* ---------- QUESTION BANK SUB-VIEW ---------- */
+  /* ---------- QUESTION BANK ---------- */
   if (viewQBForCourse) {
     return (
       <QuestionBankManagement
-        courseId={viewQBForCourse}
+        courseId={viewQBForCourse.id}
+        courseName={viewQBForCourse.name}
         onBack={() => setViewQBForCourse(null)}
       />
     );
   }
 
-  /* ---------- COURSE LIST VIEW ---------- */
+  /* ---------- COURSE LIST UI ---------- */
   return (
     <div>
       <h3>Manage Courses</h3>
-
       <button onClick={onBack}>← Back</button>
-
       <hr />
 
-      {/* ---------- ADD COURSE ---------- */}
       <button onClick={() => setShowAdd(!showAdd)}>
         {showAdd ? "Cancel Add" : "Add Course"}
       </button>
@@ -248,14 +235,24 @@ if (createExamForCourse) {
 
                 <td>
                   <button
-                    onClick={() => setViewQBForCourse(c.course_id)}
+                    onClick={() =>
+                      setViewQBForCourse({
+                        id: c.course_id,
+                        name: c.course_name,
+                      })
+                    }
                     style={{ marginRight: "6px" }}
                   >
                     View Question Bank
                   </button>
 
                   <button
-                    onClick={() => handleCreateExam(c.course_id)}
+                    onClick={() =>
+                      setCreateExamForCourse({
+                        id: c.course_id,
+                        name: c.course_name,
+                      })
+                    }
                     style={{ marginRight: "6px" }}
                   >
                     Create Exam

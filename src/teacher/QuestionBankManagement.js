@@ -1,8 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import {
-  collection,
-  getDocs,
-} from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "./../firebase";
 import QuestionUploadPanel from "./QuestionUploadPanel";
 import QuestionsTable from "./QuestionsTable";
@@ -16,7 +13,11 @@ import { handleQuestionFileUpload } from "./questionUpload/fileUploadHandler";
 import { handlePastedQuestions } from "./questionUpload/jsonPasteHandler";
 import { uploadQuestionsFromData } from "./questionUpload/uploadQuestionsFromData";
 
-function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
+function QuestionBankManagement({
+  onBack,
+  courseId: fixedCourseId,
+  courseName,
+}) {
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(fixedCourseId || "");
   const [status, setStatus] = useState("");
@@ -26,8 +27,6 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
     useQuestionEdit(setQuestions);
   const { deleteSingleQuestion } = useQuestionDelete(setQuestions);
   const [jsonText, setJsonText] = useState("");
-
-
 
   /* ================= LOAD COURSES ================= */
 
@@ -75,13 +74,23 @@ function QuestionBankManagement({ onBack, courseId: fixedCourseId }) {
 
   return (
     <div style={{ padding: "20px" }}>
-      <h3>Question Bank</h3>
+      <h3>Question Bank </h3>
 
       <button onClick={onBack}>← Back</button>
 
-      <hr />
-      <hr />
-      {/* COURSE SELECT */}
+      <br />
+      <div
+        style={{
+          marginTop: "10px",
+          marginBottom: "15px",
+          padding: "8px 12px",
+          background: "#f4f6f8",
+          border: "1px solid #dce3ea",
+          borderRadius: 4,
+        }}
+      >
+        <strong>Course:</strong> {courseName}
+      </div>
 
       {selectedCourse && (
         <div style={{ marginBottom: "15px", display: "flex", gap: "10px" }}>

@@ -6,17 +6,20 @@ import {
   doc,
   query,
   where,
-  writeBatch
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "./../firebase";
 import CreateExam from "./CreateExam";
 
-function ExamManagement({ onBack, onViewResults, preselectedCourseId }) {
-
+function ExamManagement({
+  onBack,
+  onViewResults,
+  preselectedCourseId,
+  preselectedCourseName,
+}) {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState("list"); // list | create
-
 
   /* ================= LOAD EXAMS ================= */
 
@@ -53,12 +56,12 @@ function ExamManagement({ onBack, onViewResults, preselectedCourseId }) {
 
   const deleteExam = async (examDocId, examId) => {
     const confirm1 = window.confirm(
-      `Are you sure you want to DELETE exam "${examId}"?\n\nThis will permanently delete the exam AND all student results.`
+      `Are you sure you want to DELETE exam "${examId}"?\n\nThis will permanently delete the exam AND all student results.`,
     );
     if (!confirm1) return;
 
     const confirm2 = window.prompt(
-      `Type DELETE to permanently delete exam "${examId}" and ALL its results`
+      `Type DELETE to permanently delete exam "${examId}" and ALL its results`,
     );
     if (confirm2 !== "DELETE") {
       alert("Deletion cancelled");
@@ -68,7 +71,7 @@ function ExamManagement({ onBack, onViewResults, preselectedCourseId }) {
     try {
       const attemptsQuery = query(
         collection(db, "exams"),
-        where("exam_id", "==", examId)
+        where("exam_id", "==", examId),
       );
       const attemptsSnap = await getDocs(attemptsQuery);
 
@@ -82,7 +85,7 @@ function ExamManagement({ onBack, onViewResults, preselectedCourseId }) {
       setExams((prev) => prev.filter((e) => e.id !== examDocId));
 
       alert(
-        `Exam "${examId}" deleted successfully.\nDeleted ${deletedAttempts} result(s).`
+        `Exam "${examId}" deleted successfully.\nDeleted ${deletedAttempts} result(s).`,
       );
     } catch (err) {
       console.error("Failed to delete exam and results:", err);
@@ -95,10 +98,10 @@ function ExamManagement({ onBack, onViewResults, preselectedCourseId }) {
   async function handleGlobalReset() {
     const confirmation = window.prompt(
       "⚠️ EXTREME DANGER ⚠️\n\n" +
-      "This will PERMANENTLY DELETE:\n" +
-      "- ALL courses\n" +
-      "- ALL questions\n\n" +
-      "Type DELETE ALL to proceed."
+        "This will PERMANENTLY DELETE:\n" +
+        "- ALL courses\n" +
+        "- ALL questions\n\n" +
+        "Type DELETE ALL to proceed.",
     );
 
     if (confirmation !== "DELETE ALL") {
@@ -110,12 +113,12 @@ function ExamManagement({ onBack, onViewResults, preselectedCourseId }) {
       const batch = writeBatch(db);
 
       const questionsSnap = await getDocs(collection(db, "questions"));
-      questionsSnap.docs.forEach(qDoc => {
+      questionsSnap.docs.forEach((qDoc) => {
         batch.delete(doc(db, "questions", qDoc.id));
       });
 
       const coursesSnap = await getDocs(collection(db, "courses"));
-      coursesSnap.docs.forEach(cDoc => {
+      coursesSnap.docs.forEach((cDoc) => {
         batch.delete(doc(db, "courses", cDoc.id));
       });
 
@@ -131,12 +134,12 @@ function ExamManagement({ onBack, onViewResults, preselectedCourseId }) {
 
   const deleteAllExams = async () => {
     const confirm1 = window.confirm(
-      "⚠️ ADMIN ACTION ⚠️\n\nThis will DELETE ALL exams AND ALL student results.\n\nThis action is IRREVERSIBLE."
+      "⚠️ ADMIN ACTION ⚠️\n\nThis will DELETE ALL exams AND ALL student results.\n\nThis action is IRREVERSIBLE.",
     );
     if (!confirm1) return;
 
     const confirm2 = window.prompt(
-      'Type "DELETE ALL" to permanently remove ALL exams and results'
+      'Type "DELETE ALL" to permanently remove ALL exams and results',
     );
     if (confirm2 !== "DELETE ALL") {
       alert("Operation cancelled");
@@ -176,6 +179,7 @@ function ExamManagement({ onBack, onViewResults, preselectedCourseId }) {
       {mode === "create" && (
         <CreateExam
           preselectedCourseId={preselectedCourseId}
+          preselectedCourseName={preselectedCourseName}
           onBack={() => {
             setMode("list");
             loadExams();
@@ -224,7 +228,9 @@ function ExamManagement({ onBack, onViewResults, preselectedCourseId }) {
                     <td>{index + 1}</td>
                     <td>{e.exam_id}</td>
                     <td>{e.course_id}</td>
-                    <td>{Array.isArray(e.chapters) ? e.chapters.join(", ") : "NA"}</td>
+                    <td>
+                      {Array.isArray(e.chapters) ? e.chapters.join(", ") : "NA"}
+                    </td>
                     <td>{e.duration_minutes}</td>
                     <td>{e.total_questions}</td>
                     <td>{e.active ? "YES" : "NO"}</td>
@@ -234,7 +240,11 @@ function ExamManagement({ onBack, onViewResults, preselectedCourseId }) {
                       </button>
                       <button
                         onClick={() => deleteExam(e.id, e.exam_id)}
-                        style={{ marginLeft: "6px", background: "#b00020", color: "white" }}
+                        style={{
+                          marginLeft: "6px",
+                          background: "#b00020",
+                          color: "white",
+                        }}
                       >
                         Delete
                       </button>
@@ -256,7 +266,8 @@ function ExamManagement({ onBack, onViewResults, preselectedCourseId }) {
             🚨 Delete ALL Exams & Results
           </button>
 
-          <br /><br />
+          <br />
+          <br />
 
           <button
             onClick={handleGlobalReset}
