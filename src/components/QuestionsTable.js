@@ -180,192 +180,52 @@ function QuestionsTable({ selectedCourseId }) {
         </thead>
 
         <tbody>
-          {questions.map((q, index) => (
-            <tr key={q.id}>
-              <td>{index + 1}</td>
+  {questions.map((q, index) => (
+    <tr key={q.id}>
+      <td>{index + 1}</td>
 
-              <td>
-                {editingId === q.id ? (
-                  <input
-                    value={editData.chapter}
-                    onChange={(e) =>
-                      setEditData({ ...editData, chapter: e.target.value })
-                    }
-                  />
-                ) : (
-                  q.chapter
-                )}
-              </td>
+      <td>{q.chapter}</td>
 
-              <td>
-                {editingId === q.id ? (
-                  <select
-                    value={editData.difficulty}
-                    onChange={(e) =>
-                      setEditData({
-                        ...editData,
-                        difficulty: e.target.value,
-                      })
-                    }
-                  >
-                    <option value="EASY">EASY</option>
-                    <option value="MEDIUM">MEDIUM</option>
-                    <option value="HARD">HARD</option>
-                  </select>
-                ) : (
-                  q.difficulty
-                )}
-              </td>
+      <td>{q.difficulty || <em>NA</em>}</td>
 
-              <td>
-                {editingId === q.id ? (
-                  <select
-                    value={editData.question_type}
-                    onChange={(e) =>
-                      setEditData({
-                        ...editData,
-                        question_type: e.target.value,
-                      })
-                    }
-                  >
-                    <option value="MCQ">MCQ</option>
-                    <option value="MSQ">MSQ</option>
-                    <option value="FILL_BLANK">FILL_BLANK</option>
-                    <option value="DESCRIPTIVE">DESCRIPTIVE</option>
-                  </select>
-                ) : (
-                  q.question_type
-                )}
-              </td>
+      <td>{q.question_type}</td>
 
-              <td>
-                {editingId === q.id ? (
-                  <input
-                    type="number"
-                    value={editData.marks}
-                    onChange={(e) =>
-                      setEditData({
-                        ...editData,
-                        marks: Number(e.target.value),
-                      })
-                    }
-                    style={{ width: "60px" }}
-                  />
-                ) : (
-                  q.marks
-                )}
-              </td>
+      <td>{q.marks}</td>
 
-              <td>
-                {editingId === q.id ? (
-                  <textarea
-                    value={editData.question_text}
-                    onChange={(e) =>
-                      setEditData({
-                        ...editData,
-                        question_text: e.target.value,
-                      })
-                    }
-                    rows={3}
-                    style={{ width: "100%" }}
-                  />
-                ) : (
-                  q.question_text
-                )}
-              </td>
+      <td>{q.question_text}</td>
 
-              <td>
-                {editingId === q.id ? (
-                  editData.options &&
-                  Object.keys(editData.options).length > 0 ? (
-                    Object.entries(editData.options).map(([key, value]) => (
-                      <div key={key} style={{ marginBottom: "4px" }}>
-                        <strong>{key}.</strong>{" "}
-                        <input
-                          type="text"
-                          value={value}
-                          onChange={(e) =>
-                            setEditData({
-                              ...editData,
-                              options: {
-                                ...editData.options,
-                                [key]: e.target.value,
-                              },
-                            })
-                          }
-                          style={{ width: "90%" }}
-                        />
-                      </div>
-                    ))
-                  ) : (
-                    <em>No options</em>
-                  )
-                ) : q.options && Object.keys(q.options).length > 0 ? (
-                  Object.entries(q.options).map(([k, v]) => (
-                    <div key={k}>
-                      <strong>{k}.</strong> {v}
-                    </div>
-                  ))
-                ) : (
-                  <em>N/A</em>
-                )}
-              </td>
+      <td>
+        {q.options && Object.keys(q.options).length > 0 ? (
+          Object.entries(q.options).map(([k, v]) => (
+            <div key={k}>
+              <strong>{k}.</strong> {v}
+            </div>
+          ))
+        ) : (
+          <em>N/A</em>
+        )}
+      </td>
 
-              <td>
-                {editingId === q.id ? (
-                  q.question_type === "FILL_BLANK" ? (
-                    <em>Manual</em>
-                  ) : (
-                    <input
-                      value={
-                        Array.isArray(editData.correct_answer)
-                          ? editData.correct_answer.join(",")
-                          : editData.correct_answer || ""
-                      }
-                      onChange={(e) => {
-                        const val = e.target.value
-                          .toUpperCase()
-                          .replace(/\s/g, "");
-                        setEditData({
-                          ...editData,
-                          correct_answer: Array.isArray(q.correct_answer)
-                            ? val.split(",").filter(Boolean)
-                            : val,
-                        });
-                      }}
-                      style={{ width: "80px" }}
-                    />
-                  )
-                ) : Array.isArray(q.correct_answer) ? (
-                  q.correct_answer.join(", ")
-                ) : (
-                  q.correct_answer
-                )}
-              </td>
+      <td>
+        {Array.isArray(q.correct_answer)
+          ? q.correct_answer.join(", ")
+          : q.correct_answer || <em>N/A</em>}
+      </td>
 
-              <td>
-                {editingId === q.id ? (
-                  <>
-                    <button onClick={() => saveEdit(q.id)}>Save</button>
-                    <hr />
-                    <button onClick={cancelEdit}>Cancel</button>
-                  </>
-                ) : (
-                  <>
-                    <button onClick={() => startEdit(q)}>Edit</button>
-                    <hr />
-                    <button
-                      onClick={() => deleteSingleQuestion(q.id)}
-                      style={{ color: "red" }}
-                    >
-                      Delete
-                    </button>
-                  </>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
+      <td>
+        <button>Edit</button>
+        <hr />
+        <button
+          onClick={() => deleteSingleQuestion(q.id)}
+          style={{ color: "red" }}
+        >
+          Delete
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
       </table>
     </>
   );
