@@ -1,83 +1,116 @@
 import { useEffect, useState } from "react";
-import { collection, addDoc, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "./../firebase";
 import { getChaptersForCourse } from "./../services/questions.service";
 import { createExamIfNotExists } from "./../services/exam.service";
 
 function CreateExam({ preselectedCourseId, preselectedCourseName, onBack }) {
-  /* ---------- COURSE CONTEXT ---------- */
-  const [courseId, setCourseId] = useState(preselectedCourseId);
+  /* ---------- MODE ---------- */
+  const isCourseLocked = Boolean(preselectedCourseId);
+
+  /* ---------- COURSE STATE ---------- */
+  const [courses, setCourses] = useState([]);
+  const [courseId, setCourseId] = useState(preselectedCourseId || "");
+  const [courseName, setCourseName] = useState(preselectedCourseName || "");
 
   /* ---------- CHAPTER STATE ---------- */
   const [chapters, setChapters] = useState([]);
   const [selectedChapters, setSelectedChapters] = useState([]);
 
   /* ---------- EXAM META ---------- */
+  const [examId, setExamId] = useState("");
   const [duration, setDuration] = useState(20);
   const [questionCount, setQuestionCount] = useState(10);
   const [status, setStatus] = useState("");
-  const [examId, setExamId] = useState("");
 
-  const loadChaptersForCourse = async (cid) => {
-    const chapters = await getChaptersForCourse(cid);
-    setChapters(chapters);
-    setSelectedChapters([]);
-  };
-
-  /* ---------- AUTO LOAD CHAPTERS ON ENTRY ---------- */
+  /* ---------- LOAD COURSES (ONLY IF REQUIRED) ---------- */
   useEffect(() => {
-    if (courseId) {
-      loadChaptersForCourse(courseId);
+    if (isCourseLocked) return;
+
+    const loadCourses = async () => {
+      const snap = await getDocs(collection(db, "courses"));
+      const list = snap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }));
+      setCourses(list);
+    };
+
+    loadCourses();
+  }, [isCourseLocked]);
+
+  /* ---------- LOAD CHAPTERS ---------- */
+  useEffect(() => {
+    if (!courseId) {
+      setChapters([]);
+      setSelectedChapters([]);
+      return;
     }
+
+    const load = async () => {
+      const ch = await getChaptersForCourse(courseId);
+      setChapters(ch);
+      setSelectedChapters([]);
+    };
+
+    load();
   }, [courseId]);
 
-  
+  /* ---------- CREATE EXAM ---------- */
   const createExam = async () => {
-  
-  if (!examId) {
-    alert("Please enter Exam ID");
-    return;
-  }
+    const effectiveCourseId = courseId;
+    const effectiveCourseName =
+      courseName || courses.find((c) => c.id === courseId)?.course_name;
 
-  if (selectedChapters.length === 0) {
-    alert("Please select at least one chapter");
-    return;
-  }
+    if (!effectiveCourseId) {
+      alert("Please select a course");
+      return;
+    }
 
-  const examMeta = {
-    exam_id: examId,
-    course_id: preselectedCourseId,
-    course_name: preselectedCourseName,
-    chapters: selectedChapters,
-    question_types: ["MCQ", "FILL_BLANK", "MSQ"],
-    duration_minutes: Number(duration),
-    total_questions: Number(questionCount),
-    active: true,
-    created_at: Date.now(),
+    if (!examId) {
+      alert("Please enter Exam ID");
+      return;
+    }
+
+    if (selectedChapters.length === 0) {
+      alert("Please select at least one chapter");
+      return;
+    }
+
+    const examMeta = {
+      exam_id: examId,
+      course_id: effectiveCourseId,
+      course_name: effectiveCourseName,
+      chapters: selectedChapters,
+      question_types: ["MCQ", "FILL_BLANK", "MSQ"],
+      duration_minutes: Number(duration),
+      total_questions: Number(questionCount),
+      active: true,
+      created_at: Date.now(),
+    };
+
+    const created = await createExamIfNotExists(examId, examMeta);
+    if (!created) {
+      alert(`❌ Exam ID "${examId}" already exists.`);
+      return;
+    }
+
+    setStatus(
+      `✅ Exam created successfully
+Exam ID: ${examId}
+Course: ${effectiveCourseName}
+Chapters: ${selectedChapters.join(", ")}`
+    );
   };
-  const created = await createExamIfNotExists(examId, examMeta);
-  if (!created) {
-    alert(`❌ Exam ID "${examId}" already exists. Please choose a different ID.`);
-    return;
-  }
-
-  setStatus(`✅ Exam created successfully.
-  Exam ID: ${examId}
-  Course: ${preselectedCourseName || courseId}
-  Chapters: ${selectedChapters.join(", ")}`);
-
-};
-
 
   /* ================= UI ================= */
 
   return (
     <div style={{ padding: "20px" }}>
       <h3>Create Exam</h3>
-
       <button onClick={onBack}>← Back</button>
 
-      {/* COURSE CONTEXT (READ-ONLY) */}
+      {/* COURSE SECTION */}
       <div
         style={{
           marginTop: "10px",
@@ -88,16 +121,34 @@ function CreateExam({ preselectedCourseId, preselectedCourseName, onBack }) {
           borderRadius: 4,
         }}
       >
-        <strong>Course:</strong> {preselectedCourseName || courseId}
+        <strong>Course:</strong>{" "}
+        {isCourseLocked ? (
+          <span>{courseName}</span>
+        ) : (
+          <select
+            value={courseId}
+            onChange={(e) => {
+              const cid = e.target.value;
+              setCourseId(cid);
+              const c = courses.find((x) => x.id === cid);
+              setCourseName(c?.course_name || "");
+            }}
+          >
+            <option value="">-- Select Course --</option>
+            {courses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.course_name}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       <hr />
 
       {/* EXAM ID */}
       <div style={{ marginBottom: "10px" }}>
-        <label>
-          <strong>Exam ID</strong>
-        </label>
+        <label><strong>Exam ID</strong></label>
         <br />
         <input
           type="text"
@@ -114,7 +165,6 @@ function CreateExam({ preselectedCourseId, preselectedCourseName, onBack }) {
       {chapters.length > 0 ? (
         <div style={{ marginBottom: "15px" }}>
           <strong>Select Chapters:</strong>
-
           <div style={{ marginTop: "8px" }}>
             {chapters.map((ch) => (
               <label key={ch} style={{ display: "block" }}>
@@ -126,7 +176,7 @@ function CreateExam({ preselectedCourseId, preselectedCourseName, onBack }) {
                       setSelectedChapters([...selectedChapters, ch]);
                     } else {
                       setSelectedChapters(
-                        selectedChapters.filter((c) => c !== ch),
+                        selectedChapters.filter((c) => c !== ch)
                       );
                     }
                   }}
@@ -137,13 +187,13 @@ function CreateExam({ preselectedCourseId, preselectedCourseName, onBack }) {
           </div>
         </div>
       ) : (
-        <p style={{ color: "#666" }}>No chapters found for this course.</p>
+        courseId && <p style={{ color: "#666" }}>No chapters found.</p>
       )}
 
       {/* DURATION */}
       <div style={{ marginBottom: "10px" }}>
         <label>
-          Duration (minutes):&nbsp;
+          Duration (minutes):{" "}
           <input
             type="number"
             value={duration}
@@ -155,7 +205,7 @@ function CreateExam({ preselectedCourseId, preselectedCourseName, onBack }) {
       {/* QUESTION COUNT */}
       <div style={{ marginBottom: "10px" }}>
         <label>
-          Number of Questions:&nbsp;
+          Number of Questions:{" "}
           <input
             type="number"
             value={questionCount}

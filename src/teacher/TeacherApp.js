@@ -71,7 +71,7 @@ function TeacherApp() {
   /* ---------- AUTHORIZED TEACHER ---------- */
   return (
     <div className="app-container">
-      <h2 align="center">CMR University</h2>
+      <h2 align="center">Test Portal</h2>
       <h2>Teacher Portal</h2>
 
       <p>

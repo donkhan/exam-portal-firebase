@@ -1,38 +1,163 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  startAfter,
+  getDocs,
+  deleteDoc,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
+import { db } from "../firebase";
 
-function QuestionsTable({
-  loading,
-  questions,
-  editingId,
-  editData,
-  setEditData,
-  startEdit,
-  cancelEdit,
-  saveEdit,
-  deleteSingleQuestion,
-}) {
-  if (loading) {
-    return <p>Loading questions...</p>;
-  }
+const PAGE_SIZE = 10;
 
-  if (!loading && questions.length === 0) {
+function QuestionsTable({ selectedCourseId }) {
+  /* ===================== STATE ===================== */
+
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const [firstDoc, setFirstDoc] = useState(null);
+  const [lastDoc, setLastDoc] = useState(null);
+  const [pageStack, setPageStack] = useState([]);
+
+  /* Edit state */
+  const [editingId, setEditingId] = useState(null);
+  const [editData, setEditData] = useState({});
+
+  /* ===================== EFFECT ===================== */
+
+  useEffect(() => {
+    if (!selectedCourseId) return;
+    fetchFirstPage();
+  }, [selectedCourseId]);
+
+  /* ===================== FIRESTORE FETCH ===================== */
+
+  const fetchFirstPage = async () => {
+    setLoading(true);
+
+    const q = query(
+      collection(db, "questions"),
+      where("course_id", "==", selectedCourseId),
+      orderBy("__name__"),
+      limit(PAGE_SIZE),
+    );
+
+    const snapshot = await getDocs(q);
+    const docs = snapshot.docs;
+
+    setQuestions(docs.map((d) => ({ id: d.id, ...d.data() })));
+    setFirstDoc(docs[0] || null);
+    setLastDoc(docs[docs.length - 1] || null);
+    setPageStack([]);
+
+    setLoading(false);
+  };
+
+  const fetchNextPage = async () => {
+    if (!lastDoc) return;
+
+    setLoading(true);
+    setPageStack((prev) => [...prev, firstDoc]);
+
+    const q = query(
+      collection(db, "questions"),
+      where("course_id", "==", selectedCourseId),
+      orderBy("__name__"),
+      startAfter(lastDoc),
+      limit(PAGE_SIZE),
+    );
+
+    const snapshot = await getDocs(q);
+    const docs = snapshot.docs;
+
+    if (!docs.length) {
+      setLoading(false);
+      return;
+    }
+
+    setQuestions(docs.map((d) => ({ id: d.id, ...d.data() })));
+    setFirstDoc(docs[0]);
+    setLastDoc(docs[docs.length - 1]);
+
+    setLoading(false);
+  };
+
+  const fetchPrevPage = async () => {
+    if (!pageStack.length) return;
+
+    setLoading(true);
+
+    const prevCursor = pageStack[pageStack.length - 1];
+    const newStack = pageStack.slice(0, -1);
+
+    const q = query(
+      collection(db, "questions"),
+      where("course_id", "==", selectedCourseId),
+      orderBy("__name__"),
+      startAfter(prevCursor),
+      limit(PAGE_SIZE),
+    );
+
+    const snapshot = await getDocs(q);
+    const docs = snapshot.docs;
+
+    setQuestions(docs.map((d) => ({ id: d.id, ...d.data() })));
+    setFirstDoc(docs[0]);
+    setLastDoc(docs[docs.length - 1]);
+    setPageStack(newStack);
+
+    setLoading(false);
+  };
+
+  /* ===================== EDIT / DELETE ===================== */
+
+  const startEdit = (q) => {
+    setEditingId(q.id);
+    setEditData({ ...q });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditData({});
+  };
+
+  const saveEdit = async (id) => {
+    await updateDoc(doc(db, "questions", id), editData);
+    cancelEdit();
+    fetchFirstPage();
+  };
+
+  const deleteSingleQuestion = async (id) => {
+    if (!window.confirm("Delete this question?")) return;
+    await deleteDoc(doc(db, "questions", id));
+    fetchFirstPage();
+  };
+
+  /* ===================== RENDER ===================== */
+
+  if (loading) return <p>Loading questions...</p>;
+  if (!loading && questions.length === 0)
     return <p>No questions found for this course.</p>;
-  }
 
   return (
     <>
-      {/* 🔢 Question Count */}
-      <div
-        style={{
-          marginBottom: "10px",
-          fontWeight: "bold",
-          background: "#eef3ff",
-          padding: "6px 10px",
-          borderRadius: "4px",
-          display: "inline-block",
-        }}
-      >
-        📊 Total Questions: {questions.length}
+      {/* 🔁 Paging Controls */}
+      <div style={{ marginBottom: "10px", display: "flex", gap: "10px" }}>
+        <button onClick={fetchPrevPage} disabled={!pageStack.length}>
+          ◀ Prev
+        </button>
+
+        <strong>Page {pageStack.length + 1}</strong>
+
+        <button onClick={fetchNextPage} disabled={questions.length < PAGE_SIZE}>
+          Next ▶
+        </button>
       </div>
 
       <table
@@ -83,19 +208,35 @@ function QuestionsTable({
                       })
                     }
                   >
-                    <option value="">-- Select --</option>
                     <option value="EASY">EASY</option>
                     <option value="MEDIUM">MEDIUM</option>
                     <option value="HARD">HARD</option>
                   </select>
-                ) : q.difficulty ? (
-                  q.difficulty
                 ) : (
-                  <em>NA</em>
+                  q.difficulty
                 )}
               </td>
 
-              <td>{q.question_type}</td>
+              <td>
+                {editingId === q.id ? (
+                  <select
+                    value={editData.question_type}
+                    onChange={(e) =>
+                      setEditData({
+                        ...editData,
+                        question_type: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="MCQ">MCQ</option>
+                    <option value="MSQ">MSQ</option>
+                    <option value="FILL_BLANK">FILL_BLANK</option>
+                    <option value="DESCRIPTIVE">DESCRIPTIVE</option>
+                  </select>
+                ) : (
+                  q.question_type
+                )}
+              </td>
 
               <td>
                 {editingId === q.id ? (
@@ -134,7 +275,32 @@ function QuestionsTable({
               </td>
 
               <td>
-                {q.options && Object.keys(q.options).length > 0 ? (
+                {editingId === q.id ? (
+                  editData.options &&
+                  Object.keys(editData.options).length > 0 ? (
+                    Object.entries(editData.options).map(([key, value]) => (
+                      <div key={key} style={{ marginBottom: "4px" }}>
+                        <strong>{key}.</strong>{" "}
+                        <input
+                          type="text"
+                          value={value}
+                          onChange={(e) =>
+                            setEditData({
+                              ...editData,
+                              options: {
+                                ...editData.options,
+                                [key]: e.target.value,
+                              },
+                            })
+                          }
+                          style={{ width: "90%" }}
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <em>No options</em>
+                  )
+                ) : q.options && Object.keys(q.options).length > 0 ? (
                   Object.entries(q.options).map(([k, v]) => (
                     <div key={k}>
                       <strong>{k}.</strong> {v}
@@ -147,23 +313,19 @@ function QuestionsTable({
 
               <td>
                 {editingId === q.id ? (
-                  q.question_type === "DESCRIPTIVE" ? (
+                  q.question_type === "FILL_BLANK" ? (
                     <em>Manual</em>
                   ) : (
                     <input
-                      placeholder={
-                        q.question_type === "MCQ" ? "e.g. C" : "e.g. A,C"
-                      }
                       value={
                         Array.isArray(editData.correct_answer)
                           ? editData.correct_answer.join(",")
-                          : editData.correct_answer
+                          : editData.correct_answer || ""
                       }
                       onChange={(e) => {
                         const val = e.target.value
                           .toUpperCase()
                           .replace(/\s/g, "");
-
                         setEditData({
                           ...editData,
                           correct_answer: Array.isArray(q.correct_answer)

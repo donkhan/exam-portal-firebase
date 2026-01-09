@@ -122,17 +122,10 @@ function QuestionBankManagement({
         jsonText={jsonText}
       />
 
-      <QuestionsTable
-        loading={loading}
-        questions={questions}
-        editingId={editingId}
-        editData={editData}
-        setEditData={setEditData}
-        startEdit={startEdit}
-        cancelEdit={cancelEdit}
-        saveEdit={saveEdit}
-        deleteSingleQuestion={deleteSingleQuestion}
-      />
+       <QuestionsTable selectedCourseId={selectedCourse} />
+
+
+
     </div>
   );
 }
