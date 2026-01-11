@@ -11,6 +11,41 @@ export default function ExamResults({ examId, onBack }) {
   const [loading, setLoading] = useState(true);
   const [selectedAttempt, setSelectedAttempt] = useState(null);
 
+  const [sortConfig, setSortConfig] = useState({
+    key: null,        // "email" | "score"
+    direction: "asc", // "asc" | "desc"
+  });
+
+
+  const sortedAttempts = [...attempts].sort((a, b) => {
+  if (!sortConfig.key) return 0;
+
+  let valA, valB;
+
+  if (sortConfig.key === "email") {
+    valA = (a.user_email || "").toLowerCase();
+    valB = (b.user_email || "").toLowerCase();
+  }
+
+  if (sortConfig.key === "score") {
+    valA = a.score ?? -Infinity;
+    valB = b.score ?? -Infinity;
+  }
+
+  if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+  if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+  return 0;
+});
+
+const handleSort = (key) => {
+  setSortConfig((prev) => ({
+    key,
+    direction:
+      prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+  }));
+};
+
+
   const auth = getAuth();
   const user = auth.currentUser;
 
@@ -90,17 +125,35 @@ export default function ExamResults({ examId, onBack }) {
           cellPadding="8"
           style={{ borderCollapse: "collapse", width: "100%" }}
         >
-          <thead style={{ background: "#f0f0f0" }}>
-            <tr>
-              <th>#</th>
-              <th>Student</th>
-              <th>Score</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
+         <thead style={{ background: "#f0f0f0" }}>
+  <tr>
+    <th>#</th>
+
+    <th
+      style={{ cursor: "pointer" }}
+      onClick={() => handleSort("email")}
+    >
+      Student{" "}
+      {sortConfig.key === "email" &&
+        (sortConfig.direction === "asc" ? "▲" : "▼")}
+    </th>
+
+    <th
+      style={{ cursor: "pointer" }}
+      onClick={() => handleSort("score")}
+    >
+      Score{" "}
+      {sortConfig.key === "score" &&
+        (sortConfig.direction === "asc" ? "▲" : "▼")}
+    </th>
+
+    <th>Status</th>
+    <th>Action</th>
+  </tr>
+</thead>
+
           <tbody>
-            {attempts.map((a, index) => (
+            {sortedAttempts.map((a, index) => (
               <tr key={a.id}>
                 <td>{index + 1}</td>
                 <td>
