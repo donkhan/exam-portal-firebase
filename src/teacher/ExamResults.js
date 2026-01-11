@@ -12,39 +12,36 @@ export default function ExamResults({ examId, onBack }) {
   const [selectedAttempt, setSelectedAttempt] = useState(null);
 
   const [sortConfig, setSortConfig] = useState({
-    key: null,        // "email" | "score"
+    key: null, // "email" | "score"
     direction: "asc", // "asc" | "desc"
   });
 
-
   const sortedAttempts = [...attempts].sort((a, b) => {
-  if (!sortConfig.key) return 0;
+    if (!sortConfig.key) return 0;
 
-  let valA, valB;
+    let valA, valB;
 
-  if (sortConfig.key === "email") {
-    valA = (a.user_email || "").toLowerCase();
-    valB = (b.user_email || "").toLowerCase();
-  }
+    if (sortConfig.key === "email") {
+      valA = (a.user_email || "").toLowerCase();
+      valB = (b.user_email || "").toLowerCase();
+    }
 
-  if (sortConfig.key === "score") {
-    valA = a.score ?? -Infinity;
-    valB = b.score ?? -Infinity;
-  }
+    if (sortConfig.key === "score") {
+      valA = a.score ?? -Infinity;
+      valB = b.score ?? -Infinity;
+    }
 
-  if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
-  if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
-  return 0;
-});
+    if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+    if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+    return 0;
+  });
 
-const handleSort = (key) => {
-  setSortConfig((prev) => ({
-    key,
-    direction:
-      prev.key === key && prev.direction === "asc" ? "desc" : "asc",
-  }));
-};
-
+  const handleSort = (key) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
 
   const auth = getAuth();
   const user = auth.currentUser;
@@ -59,10 +56,7 @@ const handleSort = (key) => {
 
     setLoading(true);
     try {
-      const q = query(
-        collection(db, "exams"),
-        where("exam_id", "==", examId)
-      );
+      const q = query(collection(db, "exams"), where("exam_id", "==", examId));
 
       const snap = await getDocs(q);
       const data = snap.docs.map((d) => ({
@@ -100,6 +94,46 @@ const handleSort = (key) => {
     );
   }
 
+  const exportToCSV = () => {
+  if (!attempts.length) {
+    alert("No data to export");
+    return;
+  }
+
+  const metaRow = [`Exam ID`, examId];
+
+  const headers = [
+    "Student Name",
+    "Email",
+    "Score",
+    "Status",
+  ];
+
+  const rows = sortedAttempts.map((a) => [
+    `"${a.user_name || ""}"`,
+    `"${a.user_email || ""}"`,
+    a.score ?? "",
+    a.submitted ? "Submitted" : "In Progress",
+  ]);
+
+  const csvContent = [
+    metaRow.join(","),
+    "", // empty line
+    headers.join(","),
+    ...rows.map((r) => r.join(",")),
+  ].join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `exam_results_${examId}.csv`;
+  link.click();
+
+  URL.revokeObjectURL(url);
+};
+
   /* ---------- UI ---------- */
   return (
     <div style={{ padding: 20 }}>
@@ -109,7 +143,12 @@ const handleSort = (key) => {
         <strong>Exam ID:</strong> {examId}
       </p>
 
-      {onBack && <button onClick={onBack}>← Back</button>}
+      <div style={{ marginBottom: 10 }}>
+        {onBack && <button onClick={onBack}>← Back</button>}
+        <button style={{ marginLeft: 10 }} onClick={exportToCSV}>
+          ⬇ Export CSV
+        </button>
+      </div>
 
       <hr />
 
@@ -125,32 +164,32 @@ const handleSort = (key) => {
           cellPadding="8"
           style={{ borderCollapse: "collapse", width: "100%" }}
         >
-         <thead style={{ background: "#f0f0f0" }}>
-  <tr>
-    <th>#</th>
+          <thead style={{ background: "#f0f0f0" }}>
+            <tr>
+              <th>#</th>
 
-    <th
-      style={{ cursor: "pointer" }}
-      onClick={() => handleSort("email")}
-    >
-      Student{" "}
-      {sortConfig.key === "email" &&
-        (sortConfig.direction === "asc" ? "▲" : "▼")}
-    </th>
+              <th
+                style={{ cursor: "pointer" }}
+                onClick={() => handleSort("email")}
+              >
+                Student{" "}
+                {sortConfig.key === "email" &&
+                  (sortConfig.direction === "asc" ? "▲" : "▼")}
+              </th>
 
-    <th
-      style={{ cursor: "pointer" }}
-      onClick={() => handleSort("score")}
-    >
-      Score{" "}
-      {sortConfig.key === "score" &&
-        (sortConfig.direction === "asc" ? "▲" : "▼")}
-    </th>
+              <th
+                style={{ cursor: "pointer" }}
+                onClick={() => handleSort("score")}
+              >
+                Score{" "}
+                {sortConfig.key === "score" &&
+                  (sortConfig.direction === "asc" ? "▲" : "▼")}
+              </th>
 
-    <th>Status</th>
-    <th>Action</th>
-  </tr>
-</thead>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
 
           <tbody>
             {sortedAttempts.map((a, index) => (
@@ -159,16 +198,12 @@ const handleSort = (key) => {
                 <td>
                   <strong>{a.user_name || "—"}</strong>
                   <br />
-                  <small style={{ color: "#666" }}>
-                    {a.user_email}
-                  </small>
+                  <small style={{ color: "#666" }}>{a.user_email}</small>
                 </td>
                 <td>{a.score ?? "-"}</td>
                 <td>{a.submitted ? "Submitted" : "In Progress"}</td>
                 <td>
-                  <button onClick={() => setSelectedAttempt(a)}>
-                    View
-                  </button>
+                  <button onClick={() => setSelectedAttempt(a)}>View</button>
                 </td>
               </tr>
             ))}
@@ -180,8 +215,8 @@ const handleSort = (key) => {
         <StudentAttemptDetails
           attempt={selectedAttempt}
           onBack={async () => {
-            await loadResults();       // 🔥 REFRESH after delete
-            setSelectedAttempt(null);  // back to list
+            await loadResults(); // 🔥 REFRESH after delete
+            setSelectedAttempt(null); // back to list
           }}
         />
       )}
