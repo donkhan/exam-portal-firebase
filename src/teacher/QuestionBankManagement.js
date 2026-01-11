@@ -7,7 +7,6 @@ import QuestionsDownload from "./QuestionsDownload";
 import QuestionsDeleteAll from "./QuestionsDeleteAll";
 import { useQuestionEdit } from "./useQuestionEdit";
 import { useQuestionDelete } from "./useQuestionDelete";
-import SingleQuestionAdd from "./SingleQuestionAdd";
 import { useQuestions } from "./useQuestions";
 import { handleQuestionFileUpload } from "./questionUpload/fileUploadHandler";
 import { handlePastedQuestions } from "./questionUpload/jsonPasteHandler";
@@ -23,8 +22,6 @@ function QuestionBankManagement({
   const [status, setStatus] = useState("");
   const fileInputRef = useRef(null);
   const { questions, loading, setQuestions, loadQuestions } = useQuestions();
-  const { editingId, editData, setEditData, startEdit, cancelEdit, saveEdit } =
-    useQuestionEdit(setQuestions);
   const { deleteSingleQuestion } = useQuestionDelete(setQuestions);
   const [jsonText, setJsonText] = useState("");
 
@@ -108,11 +105,6 @@ function QuestionBankManagement({
           />
         </div>
       )}
-
-      <SingleQuestionAdd
-        selectedCourse={selectedCourse}
-        onAfterAdd={() => loadQuestions(selectedCourse)}
-      />
 
       <QuestionUploadPanel
         onFileUpload={handleFileUpload}

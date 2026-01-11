@@ -32,12 +32,15 @@ export async function uploadQuestionsFromData({
       !q.chapter ||
       !q.question_type ||
       !q.question_text ||
-      !q.marks ||
+      
       !q.correct_answer
     ) {
-      alert("Invalid question entry detected");
+      alert("Invalid question entry detected " + q.question_no);
       setStatus("❌ Failed to read");
       return;
+    }
+    if(!q.marks){
+      q.marks = 1;
     }
     if(q.question_type === 'NUMERICAL') q.question_type = 'FILL_BLANK';
 
