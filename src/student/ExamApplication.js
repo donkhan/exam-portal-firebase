@@ -19,6 +19,7 @@ import {
 import { getDeviceType } from "../utils/device";
 import { auth, db } from "./../firebase";
 import "./../App.css";
+import ExamInstructions from "./ExamInstructions";
 
 function ExamApplication() {
   const [user, setUser] = useState(null);
@@ -34,6 +35,7 @@ function ExamApplication() {
 
   // 🔑 THIS is the missing link earlier
   const [activeExamId, setActiveExamId] = useState(null);
+  const [showInstructions, setShowInstructions] = useState(false);
 
   /* ================= AUTH ================= */
 
@@ -117,8 +119,6 @@ function ExamApplication() {
   function shuffle(arr) {
     return [...arr].sort(() => Math.random() - 0.5);
   }
-
-
 
   /* ================= JOIN EXAM ================= */
 
@@ -216,7 +216,7 @@ function ExamApplication() {
       status: "IN_PROGRESS",
       started_at: start,
       end_at: end,
-      device_type : getDeviceType(),
+      device_type: getDeviceType(),
     };
 
     await setDoc(examRef, examDoc);
@@ -310,6 +310,13 @@ function ExamApplication() {
           <br />
           {user.email}
           <br />
+          <button
+            style={{ float: "right", marginBottom: "10px" }}
+            onClick={() => setShowInstructions(true)}
+          >
+            ⓘ Instructions
+          </button>
+
           <br />
         </div>
       )}
@@ -337,7 +344,16 @@ function ExamApplication() {
         </div>
       )}
 
-      {!exam && user && (
+      {!exam && user && showInstructions && (
+        <ExamInstructions
+          onProceed={() => {
+            setShowInstructions(false);
+            joinExam(); // your EXISTING logic
+          }}
+        />
+      )}
+
+      {!exam && user && !showInstructions && (
         <>
           <input
             value={examIdInput}
@@ -347,13 +363,19 @@ function ExamApplication() {
           <br />
           <br />
 
-          <button onClick={joinExam}>Join Exam</button>
+          <button onClick={() => setShowInstructions(true)}>Join Exam</button>
           {error && <p className="error">{error}</p>}
         </>
       )}
 
       {exam && q && (
         <>
+          {showInstructions && (
+            <ExamInstructions
+              showClose
+              onProceed={() => setShowInstructions(false)}
+            />
+          )}
           {!exam.submitted && timeLeft !== null && (
             <p>
               Time Left: {Math.floor(timeLeft / 60)}:
