@@ -16,6 +16,7 @@ import {
   updateDoc,
   onSnapshot,
 } from "firebase/firestore";
+import { getDeviceType } from "../utils/device";
 import { auth, db } from "./../firebase";
 import "./../App.css";
 
@@ -117,6 +118,8 @@ function ExamApplication() {
     return [...arr].sort(() => Math.random() - 0.5);
   }
 
+
+
   /* ================= JOIN EXAM ================= */
 
   async function joinExam() {
@@ -213,6 +216,7 @@ function ExamApplication() {
       status: "IN_PROGRESS",
       started_at: start,
       end_at: end,
+      device_type : getDeviceType(),
     };
 
     await setDoc(examRef, examDoc);

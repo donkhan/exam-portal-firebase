@@ -3,6 +3,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "./../firebase";
 import { getAuth } from "firebase/auth";
 import StudentAttemptDetails from "./StudentAttemptDetails";
+import { renderDevice } from "../utils/device";
 
 const TEACHER_EMAIL = "kamil.k@cmr.edu.in";
 
@@ -95,44 +96,60 @@ export default function ExamResults({ examId, onBack }) {
   }
 
   const exportToCSV = () => {
-  if (!attempts.length) {
-    alert("No data to export");
-    return;
-  }
+    if (!attempts.length) {
+      alert("No data to export");
+      return;
+    }
 
-  const metaRow = [`Exam ID`, examId];
+    const metaRow = [`Exam ID`, examId];
 
-  const headers = [
-    "Student Name",
-    "Email",
-    "Score",
-    "Status",
-  ];
+    const headers = ["Student Name", "Email", "Score", "Status"];
 
-  const rows = sortedAttempts.map((a) => [
-    `"${a.user_name || ""}"`,
-    `"${a.user_email || ""}"`,
-    a.score ?? "",
-    a.submitted ? "Submitted" : "In Progress",
-  ]);
+    const rows = sortedAttempts.map((a) => [
+      `"${a.user_name || ""}"`,
+      `"${a.user_email || ""}"`,
+      a.score ?? "",
+      a.submitted ? "Submitted" : "In Progress",
+    ]);
 
-  const csvContent = [
-    metaRow.join(","),
-    "", // empty line
-    headers.join(","),
-    ...rows.map((r) => r.join(",")),
-  ].join("\n");
+    const csvContent = [
+      metaRow.join(","),
+      "", // empty line
+      headers.join(","),
+      ...rows.map((r) => r.join(",")),
+    ].join("\n");
 
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
 
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `exam_results_${examId}.csv`;
-  link.click();
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `exam_results_${examId}.csv`;
+    link.click();
 
-  URL.revokeObjectURL(url);
-};
+    URL.revokeObjectURL(url);
+  };
+
+  const formatDateTime = (ts) => {
+    if (!ts) return "—";
+    const date = ts.toDate ? ts.toDate() : new Date(ts);
+    return date.toLocaleString();
+  };
+
+  const formatDuration = (seconds) => {
+    if (!seconds || seconds <= 0) return "—";
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${secs}s`;
+  };
+
+  const toJsDate = (ts) => {
+    if (!ts) return null;
+    if (ts.toDate) return ts.toDate(); // Firestore Timestamp
+    return new Date(ts); // ISO string / Date fallback
+  };
+
+  
 
   /* ---------- UI ---------- */
   return (
@@ -187,6 +204,12 @@ export default function ExamResults({ examId, onBack }) {
               </th>
 
               <th>Status</th>
+
+              <th>Start Time</th>
+              <th>End Time</th>
+              <th>Duration</th>
+              <th>Device</th>
+
               <th>Action</th>
             </tr>
           </thead>
@@ -202,6 +225,28 @@ export default function ExamResults({ examId, onBack }) {
                 </td>
                 <td>{a.score ?? "-"}</td>
                 <td>{a.submitted ? "Submitted" : "In Progress"}</td>
+                <td>{formatDateTime(a.started_at)}</td>
+
+                <td>
+                  {a.submitted ? (
+                    formatDateTime(a.submitted_at)
+                  ) : (
+                    <span style={{ color: "orange" }}>Not submitted</span>
+                  )}
+                </td>
+
+                <td>
+                  {a.total_time_sec
+                    ? formatDuration(a.total_time_sec)
+                    : (() => {
+                        const start = toJsDate(a.started_at);
+                        const end = toJsDate(a.submitted_at);
+                        return start && end
+                          ? formatDuration(Math.floor((end - start) / 1000))
+                          : "—";
+                      })()}
+                </td>
+                <td>{renderDevice(a.device_type)}</td>
                 <td>
                   <button onClick={() => setSelectedAttempt(a)}>View</button>
                 </td>
