@@ -354,6 +354,17 @@ function ExamApplication() {
         />
       )}
 
+      {exam && showInstructions && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <ExamInstructions
+              showClose
+              onProceed={() => setShowInstructions(false)}
+            />
+          </div>
+        </div>
+      )}
+
       {!exam && user && !showInstructions && (
         <>
           <input
@@ -363,7 +374,6 @@ function ExamApplication() {
           />
           <br />
           <br />
-
           <button onClick={() => setShowInstructions(true)}>Join Exam</button>
           {error && <p className="error">{error}</p>}
         </>
@@ -371,12 +381,6 @@ function ExamApplication() {
 
       {exam && q && (
         <>
-          {showInstructions && (
-            <ExamInstructions
-              showClose
-              onProceed={() => setShowInstructions(false)}
-            />
-          )}
           {!exam.submitted && timeLeft !== null && (
             <p>
               Time Left: {Math.floor(timeLeft / 60)}:
