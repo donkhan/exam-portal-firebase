@@ -36,6 +36,7 @@ function ExamApplication() {
   // 🔑 THIS is the missing link earlier
   const [activeExamId, setActiveExamId] = useState(null);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
 
   /* ================= AUTH ================= */
 
@@ -454,12 +455,41 @@ function ExamApplication() {
             {currentIndex === exam.questions.length - 1 && !exam.submitted && (
               <button
                 disabled={submitting}
-                onClick={() => finalizeSubmission("manual")}
+                onClick={() => setShowSubmitModal(true)}
               >
                 Submit
               </button>
             )}
           </div>
+          {showSubmitModal && (
+            <div className="modal-backdrop">
+              <div className="modal">
+                <h3>Confirm Submission</h3>
+
+                <p>
+                  Are you sure you want to submit the exam?
+                  <br />
+                  <strong>This action cannot be undone.</strong>
+                </p>
+
+                <div className="modal-actions">
+                  <button onClick={() => setShowSubmitModal(false)}>
+                    Cancel
+                  </button>
+
+                  <button
+                    disabled={submitting}
+                    onClick={() => {
+                      setShowSubmitModal(false);
+                      finalizeSubmission("manual");
+                    }}
+                  >
+                    Yes, Submit Exam
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {exam.status === "SUBMITTED" && <p>Evaluating your answers…</p>}
 
