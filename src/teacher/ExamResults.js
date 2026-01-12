@@ -44,6 +44,11 @@ export default function ExamResults({ examId, onBack }) {
     }));
   };
 
+  const handleRefresh = async () => {
+    setLoading(true);
+    await loadResults();
+  };
+
   const auth = getAuth();
   const user = auth.currentUser;
 
@@ -149,8 +154,6 @@ export default function ExamResults({ examId, onBack }) {
     return new Date(ts); // ISO string / Date fallback
   };
 
-  
-
   /* ---------- UI ---------- */
   return (
     <div style={{ padding: 20 }}>
@@ -164,6 +167,13 @@ export default function ExamResults({ examId, onBack }) {
         {onBack && <button onClick={onBack}>← Back</button>}
         <button style={{ marginLeft: 10 }} onClick={exportToCSV}>
           ⬇ Export CSV
+        </button>
+        <button
+          style={{ marginLeft: 10 }}
+          onClick={handleRefresh}
+          disabled={loading}
+        >
+          🔄 Refresh
         </button>
       </div>
 
