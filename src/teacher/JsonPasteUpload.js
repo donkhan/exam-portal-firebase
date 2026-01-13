@@ -40,7 +40,6 @@ export default function JsonPasteUpload({ onQuestionsReady, externalText,onClear
     if (!Array.isArray(data.questions)) {
       throw new Error("Missing or invalid 'questions' array");
     }
-
     data.questions.forEach((q, index) => {
       if (!q.question_text) {
         throw new Error(`Question ${index + 1}: missing question_text`);
@@ -48,13 +47,17 @@ export default function JsonPasteUpload({ onQuestionsReady, externalText,onClear
       if (!q.correct_answer) {
         throw new Error(`Question ${index + 1}: missing correct_answer`);
       }
-      if (!q.chapter) {
-        throw new Error(`Question ${index + 1}: missing chapter`);
-      }
     });
 
-    return data.questions;
   };
+
+  const normalizeQuestions = (data) => {
+  return data.questions.map((q) => ({
+    ...q,
+    chapter: q.chapter ?? data.chapter,
+  }));
+};
+
 
   // --- Handle Preview
   const handlePreview = () => {
@@ -62,7 +65,8 @@ export default function JsonPasteUpload({ onQuestionsReady, externalText,onClear
       setError("");
       const clean = stripComments(rawText);
       const parsed = JSON.parse(clean);
-      const questions = validate(parsed);
+      validate(parsed);
+      const questions = normalizeQuestions(parsed);
       setPreview(questions);
     } catch (err) {
       setPreview(null);
