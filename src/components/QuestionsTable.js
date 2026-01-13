@@ -128,9 +128,18 @@ function QuestionsTable({ selectedCourseId }) {
   };
 
   const saveEdit = async (id) => {
-    await updateDoc(doc(db, "questions", id), editData);
+    const payload = {
+      question_text: editData.question_text,
+      correct_answer: editData.correct_answer,
+      editedAt: new Date(),
+    };
+
+    await updateDoc(doc(db, "questions", id), payload);
+
+    setQuestions((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, ...payload } : q)),
+    );
     cancelEdit();
-    fetchFirstPage();
   };
 
   const deleteSingleQuestion = async (id) => {
@@ -138,6 +147,27 @@ function QuestionsTable({ selectedCourseId }) {
     await deleteDoc(doc(db, "questions", id));
     fetchFirstPage();
   };
+
+  const PagingControls = () => (
+    <div
+      style={{
+        margin: "10px 0",
+        display: "flex",
+        gap: "10px",
+        alignItems: "center",
+      }}
+    >
+      <button onClick={fetchPrevPage} disabled={!pageStack.length}>
+        ◀ Prev
+      </button>
+
+      <strong>Page {pageStack.length + 1}</strong>
+
+      <button onClick={fetchNextPage} disabled={questions.length < PAGE_SIZE}>
+        Next ▶
+      </button>
+    </div>
+  );
 
   /* ===================== RENDER ===================== */
 
@@ -148,17 +178,7 @@ function QuestionsTable({ selectedCourseId }) {
   return (
     <>
       {/* 🔁 Paging Controls */}
-      <div style={{ marginBottom: "10px", display: "flex", gap: "10px" }}>
-        <button onClick={fetchPrevPage} disabled={!pageStack.length}>
-          ◀ Prev
-        </button>
-
-        <strong>Page {pageStack.length + 1}</strong>
-
-        <button onClick={fetchNextPage} disabled={questions.length < PAGE_SIZE}>
-          Next ▶
-        </button>
-      </div>
+      <PagingControls />
 
       <table
         border="1"
@@ -180,53 +200,118 @@ function QuestionsTable({ selectedCourseId }) {
         </thead>
 
         <tbody>
-  {questions.map((q, index) => (
-    <tr key={q.id}>
-      <td>{index + 1}</td>
+          {questions.map((q, index) => {
+            const isEditing = editingId === q.id;
 
-      <td>{q.chapter}</td>
+            return (
+              <tr key={q.id}>
+                <td>{index + 1}</td>
 
-      <td>{q.difficulty || <em>NA</em>}</td>
+                <td>{q.chapter}</td>
+                <td>{q.difficulty || <em>NA</em>}</td>
+                <td>{q.question_type}</td>
+                <td>{q.marks}</td>
 
-      <td>{q.question_type}</td>
+                {/* QUESTION TEXT */}
+                <td>
+                  {isEditing ? (
+                    <textarea
+                      value={editData.question_text || ""}
+                      onChange={(e) =>
+                        setEditData({
+                          ...editData,
+                          question_text: e.target.value,
+                        })
+                      }
+                      rows={3}
+                      style={{ width: "100%" }}
+                    />
+                  ) : (
+                    q.question_text
+                  )}
+                </td>
 
-      <td>{q.marks}</td>
+                {/* OPTIONS (read-only always) */}
+                <td>
+                  {q.options && Object.keys(q.options).length > 0 ? (
+                    Object.entries(q.options).map(([k, v]) => (
+                      <div key={k}>
+                        <strong>{k}.</strong> {v}
+                      </div>
+                    ))
+                  ) : (
+                    <em>N/A</em>
+                  )}
+                </td>
 
-      <td>{q.question_text}</td>
+                {/* CORRECT ANSWER */}
+                <td>
+                  {isEditing ? (
+                    q.options && Object.keys(q.options).length > 0 ? (
+                      /* MCQ → dropdown */
+                      <select
+                        value={editData.correct_answer || ""}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            correct_answer: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="">-- select --</option>
+                        {Object.keys(q.options).map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      /* Non-MCQ */
+                      <input
+                        type="text"
+                        value={editData.correct_answer || ""}
+                        onChange={(e) =>
+                          setEditData({
+                            ...editData,
+                            correct_answer: e.target.value,
+                          })
+                        }
+                      />
+                    )
+                  ) : Array.isArray(q.correct_answer) ? (
+                    q.correct_answer.join(", ")
+                  ) : (
+                    q.correct_answer || <em>N/A</em>
+                  )}
+                </td>
 
-      <td>
-        {q.options && Object.keys(q.options).length > 0 ? (
-          Object.entries(q.options).map(([k, v]) => (
-            <div key={k}>
-              <strong>{k}.</strong> {v}
-            </div>
-          ))
-        ) : (
-          <em>N/A</em>
-        )}
-      </td>
-
-      <td>
-        {Array.isArray(q.correct_answer)
-          ? q.correct_answer.join(", ")
-          : q.correct_answer || <em>N/A</em>}
-      </td>
-
-      <td>
-        <button>Edit</button>
-        <hr />
-        <button
-          onClick={() => deleteSingleQuestion(q.id)}
-          style={{ color: "red" }}
-        >
-          Delete
-        </button>
-      </td>
-    </tr>
-  ))}
-</tbody>
-
+                {/* ACTIONS */}
+                <td>
+                  {isEditing ? (
+                    <>
+                      <button onClick={() => saveEdit(q.id)}>✔ Save</button>
+                      <br />
+                      <button onClick={cancelEdit}>✖ Cancel</button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={() => startEdit(q)}>✏️ Edit</button>
+                      <hr />
+                      <button
+                        onClick={() => deleteSingleQuestion(q.id)}
+                        style={{ color: "red" }}
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
       </table>
+      <PagingControls />
     </>
   );
 }
