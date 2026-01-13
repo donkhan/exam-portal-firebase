@@ -30,7 +30,6 @@ export async function uploadQuestionsFromData({
   for (const q of data.questions) {
     if (
       !q.chapter ||
-      !q.question_type ||
       !q.question_text ||
       !q.correct_answer
     ) {
@@ -44,7 +43,7 @@ export async function uploadQuestionsFromData({
     if(!q.difficulty){
       q.difficulty = 'EASY';
     }
-    if(q.question_type === 'NUMERICAL') q.question_type = 'FILL_BLANK';
+    if(!q.question_type || q.question_type === 'NUMERICAL') q.question_type = 'FILL_BLANK';
 
     await addDoc(collection(db, "questions"), {
       course_id: effectiveCourseId,
