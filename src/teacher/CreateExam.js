@@ -22,6 +22,9 @@ function CreateExam({ preselectedCourseId, preselectedCourseName, onBack }) {
   const [duration, setDuration] = useState(20);
   const [questionCount, setQuestionCount] = useState(10);
   const [status, setStatus] = useState("");
+  /* ---------- SUBMISSION RULE ---------- */
+  const [allowEarlySubmit, setAllowEarlySubmit] = useState(false);
+  
 
   /* ---------- LOAD COURSES (ONLY IF REQUIRED) ---------- */
   useEffect(() => {
@@ -86,6 +89,7 @@ function CreateExam({ preselectedCourseId, preselectedCourseName, onBack }) {
       duration_minutes: Number(duration),
       total_questions: Number(questionCount),
       active: true,
+      allowEarlySubmit,
       created_at: Date.now(),
     };
 
@@ -213,6 +217,33 @@ Chapters: ${selectedChapters.join(", ")}`
           />
         </label>
       </div>
+
+      {/* SUBMISSION RULE */}
+<div
+  style={{
+    marginTop: "15px",
+    marginBottom: "15px",
+    padding: "10px 12px",
+    background: "#f9fafb",
+    border: "1px solid #e5e7eb",
+    borderRadius: 4,
+  }}
+>
+  <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+    <input
+      type="checkbox"
+      checked={!allowEarlySubmit}
+      onChange={(e) => setAllowEarlySubmit(!e.target.checked)}
+    />
+    <strong>Prevent early submission (recommended)</strong>
+  </label>
+
+  <p style={{ fontSize: "12px", color: "#666", marginTop: "6px" }}>
+    Students can submit only after <strong>75% of exam time</strong> is completed.
+    Uncheck to allow submission anytime.
+  </p>
+</div>
+
 
       <button onClick={createExam}>Create Exam</button>
 

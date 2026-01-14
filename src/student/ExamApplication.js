@@ -217,6 +217,7 @@ function ExamApplication() {
       status: "IN_PROGRESS",
       started_at: start,
       end_at: end,
+      allowEarlySubmit: examMeta.allowEarlySubmit ?? false, 
       device_type: getDeviceType(),
     };
 
@@ -290,6 +291,29 @@ function ExamApplication() {
       setSubmitting(false);
     }
   }
+
+  /* ================= SUBMIT LOCK (75% RULE) ================= */
+
+let canSubmit = true;
+let submitUnlockInSec = 0;
+
+if (exam && !exam.submitted) {
+  const durationMs = exam.end_at - exam.started_at;
+  const elapsedMs = Date.now() - exam.started_at;
+  const minSubmitMs = durationMs * 0.75;
+
+  if (!exam.allowEarlySubmit && elapsedMs < minSubmitMs) {
+    canSubmit = false;
+    submitUnlockInSec = Math.ceil((minSubmitMs - elapsedMs) / 1000);
+  }
+}
+
+const formatMMSS = (sec) => {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+};
+
 
   /* ================= UI ================= */
 
@@ -457,13 +481,29 @@ function ExamApplication() {
             </select>
 
             {currentIndex === exam.questions.length - 1 && !exam.submitted && (
-              <button
-                disabled={submitting}
-                onClick={() => setShowSubmitModal(true)}
-              >
-                Submit
-              </button>
-            )}
+  <>
+    <button
+      disabled={submitting || !canSubmit}
+      onClick={() => setShowSubmitModal(true)}
+      style={{
+        opacity: canSubmit ? 1 : 0.6,
+        cursor: canSubmit ? "pointer" : "not-allowed",
+      }}
+    >
+      Submit
+    </button>
+
+    {!canSubmit && (
+      <p style={{ fontSize: "12px", color: "#666", marginTop: "6px" }}>
+        Submit available in{" "}
+        <strong>{formatMMSS(submitUnlockInSec)}</strong>
+      </p>
+    )}
+  </>
+)}
+
+
+
           </div>
           {showSubmitModal && (
             <div className="modal-backdrop">
