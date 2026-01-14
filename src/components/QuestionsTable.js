@@ -13,8 +13,6 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase";
 
-const PAGE_SIZE = 10;
-
 function QuestionsTable({ selectedCourseId }) {
   /* ===================== STATE ===================== */
 
@@ -28,6 +26,7 @@ function QuestionsTable({ selectedCourseId }) {
   /* Edit state */
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
+  const [pageSize, setPageSize] = useState(10);
 
   /* ===================== EFFECT ===================== */
 
@@ -45,7 +44,7 @@ function QuestionsTable({ selectedCourseId }) {
       collection(db, "questions"),
       where("course_id", "==", selectedCourseId),
       orderBy("__name__"),
-      limit(PAGE_SIZE),
+      limit(pageSize),
     );
 
     const snapshot = await getDocs(q);
@@ -70,7 +69,7 @@ function QuestionsTable({ selectedCourseId }) {
       where("course_id", "==", selectedCourseId),
       orderBy("__name__"),
       startAfter(lastDoc),
-      limit(PAGE_SIZE),
+      limit(pageSize),
     );
 
     const snapshot = await getDocs(q);
@@ -101,7 +100,7 @@ function QuestionsTable({ selectedCourseId }) {
       where("course_id", "==", selectedCourseId),
       orderBy("__name__"),
       startAfter(prevCursor),
-      limit(PAGE_SIZE),
+      limit(pageSize),
     );
 
     const snapshot = await getDocs(q);
@@ -163,9 +162,25 @@ function QuestionsTable({ selectedCourseId }) {
 
       <strong>Page {pageStack.length + 1}</strong>
 
-      <button onClick={fetchNextPage} disabled={questions.length < PAGE_SIZE}>
+      <button onClick={fetchNextPage} disabled={questions.length < pageSize}>
         Next ▶
       </button>
+      <span style={{ marginLeft: "20px" }}>
+        Page size:{" "}
+        <select
+          value={pageSize}
+          onChange={(e) => {
+            setPageSize(Number(e.target.value));
+            setPageStack([]);
+            fetchFirstPage();
+          }}
+        >
+          <option value={5}>5</option>
+          <option value={10}>10</option>
+          <option value={20}>20</option>
+          <option value={50}>50</option>
+        </select>
+      </span>
     </div>
   );
 
