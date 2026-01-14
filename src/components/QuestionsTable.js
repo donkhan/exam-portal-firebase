@@ -141,6 +141,20 @@ function QuestionsTable({ selectedCourseId }) {
     cancelEdit();
   };
 
+  const markSanitized = async (q) => {
+    const payload = {
+      is_sanitized: true,
+      sanitizedAt: new Date(),
+    };
+
+    await updateDoc(doc(db, "questions", q.id), payload);
+
+    // local update (no paging reset)
+    setQuestions((prev) =>
+      prev.map((item) => (item.id === q.id ? { ...item, ...payload } : item)),
+    );
+  };
+
   const deleteSingleQuestion = async (id) => {
     if (!window.confirm("Delete this question?")) return;
     await deleteDoc(doc(db, "questions", id));
@@ -220,7 +234,17 @@ function QuestionsTable({ selectedCourseId }) {
 
             return (
               <tr key={q.id}>
-                <td>{index + 1}</td>
+                <td>
+                  {index + 1}
+                  {q.is_sanitized && (
+                    <span
+                      title="Sanitized"
+                      style={{ color: "green", marginLeft: "6px" }}
+                    >
+                      ✔
+                    </span>
+                  )}
+                </td>
 
                 <td>{q.chapter}</td>
                 <td>{q.difficulty || <em>NA</em>}</td>
@@ -311,6 +335,17 @@ function QuestionsTable({ selectedCourseId }) {
                   ) : (
                     <>
                       <button onClick={() => startEdit(q)}>✏️ Edit</button>
+                      {!q.is_sanitized && (
+                        <>
+                          <br />
+                          <button
+                            onClick={() => markSanitized(q)}
+                            style={{ fontSize: "12px", marginTop: "4px" }}
+                          >
+                            🧼 Sanitize
+                          </button>
+                        </>
+                      )}
                       <hr />
                       <button
                         onClick={() => deleteSingleQuestion(q.id)}
