@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +10,11 @@ function ExamEntry() {
 
   /* ================= AUTH ================= */
   const [user, setUser] = useState(null);
+
+  const logout = async () => {
+    await signOut(auth);
+    navigate("/"); // back to Home
+  };
 
   useEffect(() => {
     return onAuthStateChanged(auth, (u) => {
@@ -57,8 +62,6 @@ function ExamEntry() {
         setLoading(false);
         return;
       }
-      // ✅ Valid → store exam id & move to exam runtime
-      localStorage.setItem("activeExamId", examId.trim());
 
       // ✅ Valid → move to exam runtime
       navigate(`/student/exam/${examId.trim()}`);
@@ -107,9 +110,30 @@ function ExamEntry() {
           zIndex: 1,
         }}
       >
-        <h2 style={{ marginBottom: 6 }}>
-          Welcome, {user.displayName}
-        </h2>
+        {/* HEADER ROW */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 8,
+          }}
+        >
+          <h2 style={{ margin: 0 }}>Welcome, {user.displayName}</h2>
+
+          <button
+            onClick={logout}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#dc2626",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Logout
+          </button>
+        </div>
 
         <p style={{ color: "#555", marginBottom: 22 }}>
           {user.email}

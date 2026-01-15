@@ -25,8 +25,7 @@ function ExamFeedback({ exam, user, onDone }) {
             clarity: skip ? null : clarity,
             comments: skip ? null : comments || null,
             submittedAt: serverTimestamp(),
-          },
-          status: "COMPLETED",
+          }
         }
       );
 

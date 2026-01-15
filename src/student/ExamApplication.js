@@ -1,7 +1,5 @@
-import { useEffect, useState } from "react";
+import { act, useEffect, useState } from "react";
 import {
-  GoogleAuthProvider,
-  signInWithPopup,
   onAuthStateChanged,
   signOut,
 } from "firebase/auth";
@@ -21,10 +19,14 @@ import { auth, db } from "./../firebase";
 import "./../App.css";
 import ExamInstructions from "./ExamInstructions";
 import ExamFeedback from "./ExamFeedback";
+import { useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
 
 function ExamApplication() {
+  const navigate = useNavigate();
+
   const [user, setUser] = useState(null);
-  const [examIdInput, setExamIdInput] = useState("");
   const [error, setError] = useState("");
 
   const [exam, setExam] = useState(null);
@@ -35,11 +37,13 @@ function ExamApplication() {
   const [courseName, setCourseName] = useState("");
 
   // 🔑 THIS is the missing link earlier
-  const [activeExamId, setActiveExamId] = useState(null);
   const [showInstructions, setShowInstructions] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
 
+  const { examId } = useParams();
+  const activeExamId = examId;
+  
 
   /* ================= AUTH ================= */
 
@@ -48,9 +52,12 @@ function ExamApplication() {
     return () => unsub();
   }, []);
 
-  const login = async () => {
-    await signInWithPopup(auth, new GoogleAuthProvider());
-  };
+  useEffect(() => {
+  if (user && !exam) {
+    setShowInstructions(true);
+  }
+}, [user, exam]);
+
 
   const logout = async () => {
     await signOut(auth);
@@ -59,21 +66,12 @@ function ExamApplication() {
     setAnswers({});
     setCurrentIndex(0);
     setTimeLeft(null);
-    setExamIdInput("");
-    setActiveExamId(null);
-    localStorage.removeItem("activeExamId");
+    navigate("/"); // ✅ go back to HomePage
   };
 
   /* ================= RESTORE ACTIVE EXAM ON REFRESH ================= */
 
-  useEffect(() => {
-    if (!user) return;
-    const stored = localStorage.getItem("activeExamId");
-    if (stored) {
-      setActiveExamId(stored);
-    }
-  }, [user]);
-
+  
   useEffect(() => {
     if (!exam?.course_id) return;
 
@@ -96,15 +94,8 @@ function ExamApplication() {
 
   /* ================= REALTIME EXAM LISTENER ================= */
 
+  
   useEffect(() => {
-    if (exam?.status === "EVALUATED") {
-      localStorage.removeItem("activeExamId");
-      // keep activeExamId in state so results remain visible
-    }
-  }, [exam?.status]);
-
-  useEffect(() => {
-    
     if (!user || !activeExamId) return;
 
     const examRef = doc(db, "exams", `${activeExamId}_${user.uid}`);
@@ -128,39 +119,30 @@ function ExamApplication() {
   /* ================= JOIN EXAM ================= */
 
   async function joinExam() {
-    if (!user) return setError("Please login");
-    if (!examIdInput) return setError("Enter Exam ID");
-
     setError("");
-
-    const examDocId = `${examIdInput}_${user.uid}`;
+    const examDocId = `${activeExamId}_${user.uid}`;
     const examRef = doc(db, "exams", examDocId);
-
+   
     // 🔍 STEP 1: Check if exam already exists
     const existingSnap = await getDoc(examRef);
-
     if (existingSnap.exists()) {
       const existingExam = existingSnap.data();
 
       // ✅ Exam already finished → show results
       if (existingExam.submitted) {
-        setActiveExamId(examIdInput);
         setCurrentIndex(0);
         return;
       }
 
       // ✅ Exam in progress → resume
-      setActiveExamId(examIdInput);
       setCurrentIndex(0);
       return;
     }
 
     // 🆕 STEP 2: Fresh exam creation
     const metaSnap = await getDocs(
-      query(collection(db, "exams_meta"), where("exam_id", "==", examIdInput)),
+      query(collection(db, "exams_meta"), where("exam_id", "==", activeExamId)),
     );
-
-    if (metaSnap.empty) return setError("Invalid Exam ID");
 
     const examMeta = metaSnap.docs[0].data();
     if (!examMeta.active) return setError("Exam not active");
@@ -208,9 +190,9 @@ function ExamApplication() {
 
     const start = Date.now();
     const end = start + examMeta.duration_minutes * 60 * 1000;
-
+    
     const examDoc = {
-      exam_id: examIdInput,
+      exam_id: activeExamId,
       course_id: examMeta.course_id,
       user_id: user.uid,
       user_email: user.email || "",
@@ -225,10 +207,8 @@ function ExamApplication() {
       device_type: getDeviceType(),
     };
 
+    
     await setDoc(examRef, examDoc);
-
-    localStorage.setItem("activeExamId", examIdInput);
-    setActiveExamId(examIdInput);
     setCurrentIndex(0);
   }
 
@@ -327,7 +307,6 @@ function ExamApplication() {
     <div className="app-container">
       <h2 align="center">Online Exam</h2>
 
-      {!user && <button onClick={login}>Login with Google</button>}
       {user && <button onClick={logout}>Logout</button>}
 
       <br />
@@ -354,7 +333,7 @@ function ExamApplication() {
 
       {exam && (
         <div className="exam-info">
-          <strong>Exam ID:</strong> {exam.exam_id}
+          <strong>Exam ID:</strong> {activeExamId}
           <br />
           <strong>Course:</strong> {courseName}
           <br />
@@ -380,27 +359,11 @@ function ExamApplication() {
               showClose
               onProceed={() => {
                 setShowInstructions(false);
-                if (!exam) {
-                  joinExam(); // before exam → start exam
-                }
+                joinExam(); // before exam → start exam
               }}
             />
           </div>
         </div>
-      )}
-
-      {!exam && user && !showInstructions && (
-        <>
-          <input
-            value={examIdInput}
-            onChange={(e) => setExamIdInput(e.target.value)}
-            placeholder="Enter Exam ID"
-          />
-          <br />
-          <br />
-          <button onClick={() => setShowInstructions(true)}>Join Exam</button>
-          {error && <p className="error">{error}</p>}
-        </>
       )}
 
       {exam && q && (

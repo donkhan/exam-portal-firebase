@@ -17,7 +17,7 @@ function HomePage() {
   const studentLogin = async () => {
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
-      navigate("/student"); // student flow continues
+      navigate("/student/exam-entry"); // student flow continues
     } catch (err) {
       console.error("Student login failed", err);
       alert("Login failed. Please try again.");
