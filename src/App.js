@@ -1,12 +1,21 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Student from "./student/Student";
-import TeacherApp from "./teacher/TeacherApp";
-import { auth } from "./firebase";
-import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./firebase";
+
+/* ===== COMMON ===== */
+import HomePage from "./HomePage";
+
+/* ===== STUDENT FLOW ===== */
+import Student from "./student/Student";
+import ExamEntry from "./student/ExamEntry";
+import ExamApplication from "./student/ExamApplication";
+
+/* ===== TEACHER FLOW ===== */
+import TeacherLogin from "./teacher/TeacherLogin";
+import TeacherApp from "./teacher/TeacherApp";
 import ExamResults from "./teacher/ExamResults";
 import ManageCourses from "./teacher/ManageCourses";
-import HomePage from "./HomePage";
 
 const TEACHER_EMAIL = "kamil.k@cmr.edu.in";
 
@@ -14,6 +23,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  /* ===== AUTH STATE ===== */
   useEffect(() => {
     return onAuthStateChanged(auth, (u) => {
       setUser(u);
@@ -26,20 +36,24 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* 🌟 Flashy common landing page */}
+        {/* ================= HOME ================= */}
         <Route path="/" element={<HomePage />} />
 
-        {/* 🎓 Student portal */}
+        {/* ================= STUDENT FLOW ================= */}
         <Route path="/student" element={<Student />} />
+        <Route path="/student/exam-entry" element={<ExamEntry />} />
+        <Route path="/student/exam/:examId" element={<ExamApplication />} />
 
-        {/* 🧑‍🏫 Teacher portal (protected) */}
+        {/* ================= TEACHER FLOW ================= */}
+        <Route path="/teacher-login" element={<TeacherLogin />} />
+
         <Route
           path="/teacher"
           element={
             user?.email === TEACHER_EMAIL ? (
               <TeacherApp />
             ) : (
-              <Navigate to="/" />
+              <Navigate to="/teacher-login" replace />
             )
           }
         />
@@ -50,7 +64,7 @@ function App() {
             user?.email === TEACHER_EMAIL ? (
               <ExamResults />
             ) : (
-              <Navigate to="/" />
+              <Navigate to="/teacher-login" replace />
             )
           }
         />
@@ -61,10 +75,13 @@ function App() {
             user?.email === TEACHER_EMAIL ? (
               <ManageCourses />
             ) : (
-              <Navigate to="/" />
+              <Navigate to="/teacher-login" replace />
             )
           }
         />
+
+        {/* ================= FALLBACK ================= */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

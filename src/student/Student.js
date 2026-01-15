@@ -6,7 +6,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase";
 import examHall from "../assets/examhall.jpg";
-import ExamApplication from "./ExamApplication";
+import { useNavigate } from "react-router-dom";
 
 function Student() {
   const [user, setUser] = useState(null);
@@ -23,11 +23,14 @@ function Student() {
     await signInWithPopup(auth, new GoogleAuthProvider());
   };
 
-  /* ================= AFTER LOGIN ================= */
+
+const navigate = useNavigate();
+
+useEffect(() => {
   if (user) {
-    // 🔑 Hand over full control to ExamApplication
-    return <ExamApplication />;
+    navigate("/student/exam-entry");
   }
+}, [user, navigate]);
 
   /* ================= BEFORE LOGIN ================= */
   return (

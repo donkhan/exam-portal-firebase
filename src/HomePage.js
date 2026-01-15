@@ -12,42 +12,44 @@ function HomePage() {
 
   return (
     <div className="home-root">
-      {/* HEADER */}
+      {/* ================= HEADER ================= */}
       <header className="home-header">
         <div className="institution-brand">
           UNIVERSITY EXAMINATION MANAGEMENT SYSTEM
         </div>
       </header>
 
-      {/* HERO COLLAGE */}
+      {/* ================= HERO / COLLAGE ================= */}
       <main className="hero-collage">
-        {/* STUDENT IMAGES */}
+        {/* Student Images */}
         <img src={student1} className="collage-img img-1" alt="Student" />
         <img src={student2} className="collage-img img-2" alt="Student" />
         <img src={student3} className="collage-img img-3" alt="Student" />
         <img src={student4} className="collage-img img-4" alt="Student" />
         <img src={student5} className="collage-img img-5" alt="Student" />
 
-        {/* CENTER CONTROL */}
+        {/* ================= CENTER CONTENT ================= */}
         <div className="hero-center">
           <h1>Digital Examination Platform</h1>
 
           <p>
             Secure, scalable and institution-grade examination infrastructure
-            for modern universities.
+            designed for modern universities and academic institutions.
           </p>
 
           <div className="hero-actions">
+            {/* STUDENT */}
             <button
               className="hero-btn student"
               onClick={() => navigate("/student")}
             >
-              Student Portal
+              Student Login
             </button>
 
+            {/* FACULTY */}
             <button
               className="hero-btn teacher"
-              onClick={() => navigate("/teacher")}
+              onClick={() => navigate("/teacher-login")}
             >
               Faculty & Administration
             </button>
@@ -55,7 +57,7 @@ function HomePage() {
         </div>
       </main>
 
-      {/* FOOTER */}
+      {/* ================= FOOTER ================= */}
       <footer className="home-footer">
         Designed for Universities, Boards, and Academic Institutions
       </footer>
