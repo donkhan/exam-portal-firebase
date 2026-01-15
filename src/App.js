@@ -7,7 +7,6 @@ import { auth } from "./firebase";
 import HomePage from "./HomePage";
 
 /* ===== STUDENT FLOW ===== */
-import Student from "./student/Student";
 import ExamEntry from "./student/ExamEntry";
 import ExamApplication from "./student/ExamApplication";
 
@@ -41,7 +40,6 @@ function App() {
         <Route path="/" element={<HomePage />} />
 
         {/* ================= STUDENT FLOW ================= */}
-        <Route path="/student" element={<Student />} />
         <Route path="/student/exam-entry" element={<ExamEntry />} />
         <Route path="/student/exam/:examId" element={<ExamApplication />} />
 
