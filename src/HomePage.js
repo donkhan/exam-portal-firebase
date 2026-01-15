@@ -17,7 +17,7 @@ function HomePage() {
   const studentLogin = async () => {
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
-      navigate("/student/exam-entry"); // student flow continues
+      navigate("/student/exam-entry");
     } catch (err) {
       console.error("Student login failed", err);
       alert("Login failed. Please try again.");
@@ -27,20 +27,33 @@ function HomePage() {
   const facultyLogin = async () => {
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
-      navigate("/teacher"); // teacher route is already guarded
+      navigate("/teacher");
     } catch (err) {
       console.error("Faculty login failed", err);
       alert("Login failed. Please try again.");
     }
   };
 
+  const toggleTheme = () => {
+  const current =
+    document.documentElement.getAttribute("data-theme");
+
+  const next =
+    current === "neo-dark" ? "campus-light" : "neo-dark";
+
+  document.documentElement.setAttribute("data-theme", next);
+  localStorage.setItem("examverse-theme", next);
+};
+
+
   return (
     <div className="home-root">
       {/* ================= HEADER ================= */}
       <header className="home-header">
         <div className="institution-brand">
-          UNIVERSITY EXAMINATION MANAGEMENT SYSTEM
+          ExamVerse
         </div>
+      
       </header>
 
       {/* ================= HERO / COLLAGE ================= */}
@@ -54,18 +67,18 @@ function HomePage() {
 
         {/* ================= CENTER CONTENT ================= */}
         <div className="hero-center">
-          <h1>Digital Examination Platform</h1>
+          <h1>Exams, Reimagined.</h1>
 
           <p>
-            Secure, scalable and institution-grade examination infrastructure
-            designed for modern universities and academic institutions.
+            A next-generation examination platform built for speed, security,
+            and real academic evaluation — not just submissions.
           </p>
 
           {/* GENERAL INSTRUCTIONS */}
           <ul style={{ textAlign: "left", marginTop: 16, fontSize: 14 }}>
-            <li>✔ Ensure stable internet connectivity</li>
-            <li>✔ Do not refresh the browser during the exam</li>
-            <li>✔ Login using your official Google account</li>
+            <li>✔ Use a stable internet connection</li>
+            <li>✔ Avoid refreshing or switching tabs during the exam</li>
+            <li>✔ Sign in using your official Google account</li>
           </ul>
 
           <div className="hero-actions">
@@ -74,7 +87,7 @@ function HomePage() {
               className="hero-btn student"
               onClick={studentLogin}
             >
-              Student Login
+              Enter as Student
             </button>
 
             {/* FACULTY */}
@@ -82,7 +95,7 @@ function HomePage() {
               className="hero-btn teacher"
               onClick={facultyLogin}
             >
-              Faculty & Administration
+              Faculty & Admin Portal
             </button>
           </div>
         </div>
@@ -90,9 +103,18 @@ function HomePage() {
 
       {/* ================= FOOTER ================= */}
       <footer className="home-footer">
-        Designed for Universities, Boards, and Academic Institutions
+        Powering modern assessments for campuses, boards, and digital-first institutions.
       </footer>
+    
+      <button
+  className="theme-fab"
+  onClick={toggleTheme}
+  title="Switch theme"
+>
+  🌓
+</button>
     </div>
+    
   );
 }
 

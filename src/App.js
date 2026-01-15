@@ -29,6 +29,13 @@ function App() {
     });
   }, []);
 
+  useEffect(() => {
+    const savedTheme =
+      localStorage.getItem("examverse-theme") || "neo-dark";
+
+    document.documentElement.setAttribute("data-theme", savedTheme);
+  }, []);
+
   if (loading) return <p>Loading...</p>;
 
   const isTeacher = user?.email === TEACHER_EMAIL;

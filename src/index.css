@@ -11,3 +11,71 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+
+.home-root {
+  background: var(--bg-main);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+.home-header {
+  background: var(--bg-card);
+}
+
+.hero-center p {
+  color: var(--text-secondary);
+}
+
+.hero-btn.student {
+  background: var(--btn-student);
+}
+
+.hero-btn.teacher {
+  background: var(--btn-teacher);
+}
+
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.theme-toggle:hover {
+  opacity: 0.85;
+}
+
+.theme-fab {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+
+  width: 44px;
+  height: 44px;
+
+  border-radius: 50%;
+  border: none;
+
+  background: var(--bg-card);
+  color: var(--text-primary);
+
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+
+  font-size: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.theme-fab:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
+}

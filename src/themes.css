@@ -1,0 +1,27 @@
+/* ================= NEO DARK (Default) ================= */
+[data-theme="neo-dark"] {
+  --bg-main: #0b0f1a;
+  --bg-card: #11172a;
+
+  --text-primary: #ffffff;
+  --text-secondary: #a3aed0;
+
+  --accent: #6c8cff;
+
+  --btn-student: #4f7cff;
+  --btn-teacher: #22c55e;
+}
+
+/* ================= CAMPUS LIGHT ================= */
+[data-theme="campus-light"] {
+  --bg-main: #f7f9fc;
+  --bg-card: #ffffff;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+
+  --accent: #2563eb;
+
+  --btn-student: #2563eb;
+  --btn-teacher: #16a34a;
+}
