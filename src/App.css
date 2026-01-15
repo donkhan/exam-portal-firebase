@@ -142,3 +142,49 @@ button.secondary:hover {
 }
 
 
+/* ================= FEEDBACK UX ================= */
+
+.feedback-container {
+  max-width: 500px;
+}
+
+.feedback-field {
+  margin-top: 16px;
+}
+
+.feedback-field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+/* rating buttons */
+.rating-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f7f7f7;
+  color: #222;              /* 👈 ADD THIS */
+  font-size: 14px;          /* 👈 optional but helps */
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.rating-btn:hover {
+  background: #eee;
+}
+
+/* SELECTED STATE (THIS IS THE KEY) */
+.rating-btn.selected {
+  background: #007bff;
+  color: #fff;
+  border-color: #007bff;
+  font-weight: bold;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.feedback-field textarea {
+  width: 100%;
+  box-sizing: border-box;   /* 👈 IMPORTANT */
+  resize: vertical;         /* optional, UX-friendly */
+}

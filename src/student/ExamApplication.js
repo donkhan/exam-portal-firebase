@@ -20,6 +20,7 @@ import { getDeviceType } from "../utils/device";
 import { auth, db } from "./../firebase";
 import "./../App.css";
 import ExamInstructions from "./ExamInstructions";
+import ExamFeedback from "./ExamFeedback";
 
 function ExamApplication() {
   const [user, setUser] = useState(null);
@@ -37,6 +38,8 @@ function ExamApplication() {
   const [activeExamId, setActiveExamId] = useState(null);
   const [showInstructions, setShowInstructions] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+
 
   /* ================= AUTH ================= */
 
@@ -290,6 +293,7 @@ function ExamApplication() {
     } finally {
       setSubmitting(false);
     }
+    setShowFeedback(true); 
   }
 
   /* ================= SUBMIT LOCK (75% RULE) ================= */
@@ -532,6 +536,22 @@ function ExamApplication() {
               </div>
             </div>
           )}
+          
+          {showFeedback && exam && user && (
+  <div className="modal-backdrop">
+    <div className="modal">
+      <ExamFeedback
+        exam={exam}
+        user={user}
+        onDone={() => {
+          setShowFeedback(false); // 👈 close popup
+        }}
+      />
+    </div>
+  </div>
+)}
+
+
 
           {exam.status === "SUBMITTED" && <p>Evaluating your answers…</p>}
 
