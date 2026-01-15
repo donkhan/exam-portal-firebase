@@ -4,6 +4,8 @@ import { db } from "./../firebase";
 import { getAuth } from "firebase/auth";
 import StudentAttemptDetails from "./StudentAttemptDetails";
 import { renderDevice } from "../utils/device";
+import { getFunctions, httpsCallable } from "firebase/functions";
+
 
 const TEACHER_EMAIL = "kamil.k@cmr.edu.in";
 
@@ -11,6 +13,47 @@ export default function ExamResults({ examId, onBack }) {
   const [attempts, setAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedAttempt, setSelectedAttempt] = useState(null);
+
+  const inProgressAttempts = attempts.filter(
+  (a) => !a.submitted
+);
+const [closing, setClosing] = useState(false);
+
+const handleCloseAndEvaluate = async () => {
+  if (inProgressAttempts.length === 0) {
+    alert("No in-progress attempts to close.");
+    return;
+  }
+
+  const ok = window.confirm(
+    `This will force-submit and evaluate ${inProgressAttempts.length} in-progress attempt(s).\n\nThis action cannot be undone.\n\nProceed?`
+  );
+
+  if (!ok) return;
+
+  try {
+    setClosing(true);
+
+    const functions = getFunctions();
+    const closeExam = httpsCallable(functions, "closeExamAndEvaluate");
+
+    console.log("🔥 Calling closeExamAndEvaluate for exam:", examId);
+
+    const res = await closeExam({ examId });
+
+    console.log("✅ closeExamAndEvaluate response:", res.data);
+
+    alert(`Exam closed. ${res.data.closed} attempt(s) submitted.`);
+
+    await loadResults(); // refresh table
+  } catch (err) {
+    console.error("❌ Failed to close exam:", err);
+    alert("Failed to close exam. Check console logs.");
+  } finally {
+    setClosing(false);
+  }
+};
+
 
   const [sortConfig, setSortConfig] = useState({
     key: null, // "email" | "score"
@@ -175,6 +218,31 @@ export default function ExamResults({ examId, onBack }) {
         >
           🔄 Refresh
         </button>
+      <button
+  style={{
+    marginLeft: 10,
+    backgroundColor: "#c62828",
+    color: "white",
+    padding: "6px 12px",
+    border: "none",
+    cursor: inProgressAttempts.length === 0 ? "not-allowed" : "pointer",
+    opacity: inProgressAttempts.length === 0 ? 0.5 : 1,
+  }}
+  disabled={inProgressAttempts.length === 0 || closing}
+  onClick={handleCloseAndEvaluate}
+>
+  {closing
+    ? "Closing Exam..."
+    : `Close Exam & Evaluate (${inProgressAttempts.length})`}
+</button>
+
+{inProgressAttempts.length > 0 && (
+  <p style={{ color: "#c62828", marginTop: 8 }}>
+    ⚠ {inProgressAttempts.length} attempt(s) are still in progress.
+    You may force-submit them.
+  </p>
+)}
+
       </div>
 
       <hr />
