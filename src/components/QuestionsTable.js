@@ -156,7 +156,7 @@ function QuestionsTable({ selectedCourseId }) {
   };
 
   const deleteSingleQuestion = async (id) => {
-    if (!window.confirm("Delete this question?")) return;
+    if (!window.confirm("Delete this question with id " + id + " ?")) return;
     await deleteDoc(doc(db, "questions", id));
     fetchFirstPage();
   };
