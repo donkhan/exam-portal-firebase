@@ -32,6 +32,20 @@ export default function StudentAttemptDetails({ attempt, onBack }) {
     }
   };
 
+  const renderStars = (value, max = 5) => {
+    if (value == null) return "—";
+
+    return (
+      <span>
+        {[...Array(max)].map((_, i) => (
+          <span key={i} style={{ color: i < value ? "#f5b301" : "#ccc" }}>
+            ★
+          </span>
+        ))}
+      </span>
+    );
+  };
+
   return (
     <div style={{ marginTop: 20 }}>
       <button onClick={onBack}>← Back</button>
@@ -51,6 +65,62 @@ export default function StudentAttemptDetails({ attempt, onBack }) {
       <h3 style={{ marginTop: 10 }}>
         {attempt.user_name} ({attempt.user_email})
       </h3>
+
+      {attempt.feedback ? (
+        <div
+          style={{
+            marginTop: 10,
+            marginBottom: 15,
+            padding: "12px 14px",
+            border: "1px solid #ddd",
+            borderRadius: 6,
+            background: "#fafafa",
+          }}
+        >
+          <h4 style={{ marginTop: 0 }}>📝 Student Feedback</h4>
+
+          <p>
+            <strong>Overall Rating:</strong>{" "}
+            {renderStars(attempt.feedback.rating)}{" "}
+            <span style={{ color: "#666" }}>({attempt.feedback.rating}/5)</span>
+          </p>
+
+          <p>
+            <strong>Difficulty:</strong> {attempt.feedback.difficulty || "—"}
+          </p>
+
+          <p>
+            <strong>Question Clarity:</strong>{" "}
+            {renderStars(attempt.feedback.clarity)}{" "}
+            <span style={{ color: "#666" }}>
+              ({attempt.feedback.clarity}/5)
+            </span>
+          </p>
+
+          {attempt.feedback.comments && (
+            <p>
+              <strong>Comments:</strong>
+              <br />
+              <span style={{ whiteSpace: "pre-wrap" }}>
+                {attempt.feedback.comments}
+              </span>
+            </p>
+          )}
+        </div>
+      ) : (
+        <div
+          style={{
+            marginTop: 10,
+            marginBottom: 15,
+            padding: "10px 12px",
+            borderLeft: "4px solid #ccc",
+            color: "#666",
+            fontStyle: "italic",
+          }}
+        >
+          Student skipped feedback.
+        </div>
+      )}
 
       <button onClick={() => window.print()}>Download PDF</button>
       <div
