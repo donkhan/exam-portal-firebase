@@ -21,7 +21,7 @@ import ExamInstructions from "./ExamInstructions";
 import ExamFeedback from "./ExamFeedback";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-
+import { MATH_QUOTES } from "../constants/mathQuotes";
 
 function ExamApplication() {
   const navigate = useNavigate();
@@ -302,7 +302,8 @@ function ExamApplication() {
   /* ================= UI ================= */
 
   const q = exam?.questions?.[currentIndex];
-
+  const quoteForThisQuestion =
+    MATH_QUOTES[currentIndex % MATH_QUOTES.length];
   return (
     <div className="app-container">
       <h2 align="center">Online Exam</h2>
@@ -374,6 +375,10 @@ function ExamApplication() {
               {String(timeLeft % 60).padStart(2, "0")}
             </p>
           )}
+
+          <div style={{ marginBottom: "6px", fontStyle: "italic", color: "#666" }}>
+  “{quoteForThisQuestion.quote}” — {quoteForThisQuestion.author}
+</div>
 
           <h3>
             Q{currentIndex + 1}. {q.question_text}
