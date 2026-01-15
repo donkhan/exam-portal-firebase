@@ -104,6 +104,7 @@ function ExamApplication() {
   }, [exam?.status]);
 
   useEffect(() => {
+    
     if (!user || !activeExamId) return;
 
     const examRef = doc(db, "exams", `${activeExamId}_${user.uid}`);

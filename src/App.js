@@ -12,7 +12,6 @@ import ExamEntry from "./student/ExamEntry";
 import ExamApplication from "./student/ExamApplication";
 
 /* ===== TEACHER FLOW ===== */
-import TeacherLogin from "./teacher/TeacherLogin";
 import TeacherApp from "./teacher/TeacherApp";
 import ExamResults from "./teacher/ExamResults";
 import ManageCourses from "./teacher/ManageCourses";
@@ -33,6 +32,8 @@ function App() {
 
   if (loading) return <p>Loading...</p>;
 
+  const isTeacher = user?.email === TEACHER_EMAIL;
+
   return (
     <BrowserRouter>
       <Routes>
@@ -45,39 +46,19 @@ function App() {
         <Route path="/student/exam/:examId" element={<ExamApplication />} />
 
         {/* ================= TEACHER FLOW ================= */}
-        <Route path="/teacher-login" element={<TeacherLogin />} />
-
         <Route
           path="/teacher"
-          element={
-            user?.email === TEACHER_EMAIL ? (
-              <TeacherApp />
-            ) : (
-              <Navigate to="/teacher-login" replace />
-            )
-          }
+          element={isTeacher ? <TeacherApp /> : <Navigate to="/" replace />}
         />
 
         <Route
           path="/teacher/results"
-          element={
-            user?.email === TEACHER_EMAIL ? (
-              <ExamResults />
-            ) : (
-              <Navigate to="/teacher-login" replace />
-            )
-          }
+          element={isTeacher ? <ExamResults /> : <Navigate to="/" replace />}
         />
 
         <Route
           path="/teacher/manage-courses"
-          element={
-            user?.email === TEACHER_EMAIL ? (
-              <ManageCourses />
-            ) : (
-              <Navigate to="/teacher-login" replace />
-            )
-          }
+          element={isTeacher ? <ManageCourses /> : <Navigate to="/" replace />}
         />
 
         {/* ================= FALLBACK ================= */}
