@@ -217,7 +217,7 @@ function ExamApplication() {
       status: "IN_PROGRESS",
       started_at: start,
       end_at: end,
-      allowEarlySubmit: examMeta.allowEarlySubmit ?? false, 
+      allowEarlySubmit: examMeta.allowEarlySubmit ?? false,
       device_type: getDeviceType(),
     };
 
@@ -294,26 +294,25 @@ function ExamApplication() {
 
   /* ================= SUBMIT LOCK (75% RULE) ================= */
 
-let canSubmit = true;
-let submitUnlockInSec = 0;
+  let canSubmit = true;
+  let submitUnlockInSec = 0;
 
-if (exam && !exam.submitted) {
-  const durationMs = exam.end_at - exam.started_at;
-  const elapsedMs = Date.now() - exam.started_at;
-  const minSubmitMs = durationMs * 0.75;
+  if (exam && !exam.submitted) {
+    const durationMs = exam.end_at - exam.started_at;
+    const elapsedMs = Date.now() - exam.started_at;
+    const minSubmitMs = durationMs * 0.75;
 
-  if (!exam.allowEarlySubmit && elapsedMs < minSubmitMs) {
-    canSubmit = false;
-    submitUnlockInSec = Math.ceil((minSubmitMs - elapsedMs) / 1000);
+    if (!exam.allowEarlySubmit && elapsedMs < minSubmitMs) {
+      canSubmit = false;
+      submitUnlockInSec = Math.ceil((minSubmitMs - elapsedMs) / 1000);
+    }
   }
-}
 
-const formatMMSS = (sec) => {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-};
-
+  const formatMMSS = (sec) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+  };
 
   /* ================= UI ================= */
 
@@ -369,21 +368,17 @@ const formatMMSS = (sec) => {
         </div>
       )}
 
-      {!exam && user && showInstructions && (
-        <ExamInstructions
-          onProceed={() => {
-            setShowInstructions(false);
-            joinExam(); // your EXISTING logic
-          }}
-        />
-      )}
-
-      {exam && showInstructions && (
+      {user && showInstructions && (
         <div className="modal-backdrop">
           <div className="modal">
             <ExamInstructions
               showClose
-              onProceed={() => setShowInstructions(false)}
+              onProceed={() => {
+                setShowInstructions(false);
+                if (!exam) {
+                  joinExam(); // before exam → start exam
+                }
+              }}
             />
           </div>
         </div>
@@ -481,29 +476,32 @@ const formatMMSS = (sec) => {
             </select>
 
             {currentIndex === exam.questions.length - 1 && !exam.submitted && (
-  <>
-    <button
-      disabled={submitting || !canSubmit}
-      onClick={() => setShowSubmitModal(true)}
-      style={{
-        opacity: canSubmit ? 1 : 0.6,
-        cursor: canSubmit ? "pointer" : "not-allowed",
-      }}
-    >
-      Submit
-    </button>
+              <>
+                <button
+                  disabled={submitting || !canSubmit}
+                  onClick={() => setShowSubmitModal(true)}
+                  style={{
+                    opacity: canSubmit ? 1 : 0.6,
+                    cursor: canSubmit ? "pointer" : "not-allowed",
+                  }}
+                >
+                  Submit
+                </button>
 
-    {!canSubmit && (
-      <p style={{ fontSize: "12px", color: "#666", marginTop: "6px" }}>
-        Submit available in{" "}
-        <strong>{formatMMSS(submitUnlockInSec)}</strong>
-      </p>
-    )}
-  </>
-)}
-
-
-
+                {!canSubmit && (
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      color: "#666",
+                      marginTop: "6px",
+                    }}
+                  >
+                    Submit available in{" "}
+                    <strong>{formatMMSS(submitUnlockInSec)}</strong>
+                  </p>
+                )}
+              </>
+            )}
           </div>
           {showSubmitModal && (
             <div className="modal-backdrop">
