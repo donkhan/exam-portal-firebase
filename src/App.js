@@ -3,16 +3,20 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
 
+import { ThemeProvider } from "./ThemeContext";
 import "./themes.css";
 
+/* ===== COMMON ===== */
 import HomePage from "./HomePage";
 
+/* ===== STUDENT FLOW ===== */
 import ExamEntry from "./student/ExamEntry";
 import ExamApplication from "./student/ExamApplication";
 
+/* ===== INSTRUCTOR FLOW ===== */
+import InstructorApp from "./instructor/InstructorApp";
 import ExamResults from "./instructor/ExamResults";
 import ManageCourses from "./instructor/ManageCourses";
-import InstructorApp  from "./instructor/InstructorApp";
 
 const INSTRUCTOR_EMAIL = "kamil.k@cmr.edu.in";
 
@@ -20,6 +24,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  /* ===== AUTH STATE ===== */
   useEffect(() => {
     return onAuthStateChanged(auth, (u) => {
       setUser(u);
@@ -27,43 +32,48 @@ function App() {
     });
   }, []);
 
-  useEffect(() => {
-    const savedTheme =
-      localStorage.getItem("examverse-theme") || "neo-dark";
-
-    document.documentElement.setAttribute("data-theme", savedTheme);
-  }, []);
-
   if (loading) return <p>Loading...</p>;
 
   const isInstructor = user?.email === INSTRUCTOR_EMAIL;
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
+    <ThemeProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* ================= HOME ================= */}
+          <Route path="/" element={<HomePage />} />
 
-        <Route path="/student/exam-entry" element={<ExamEntry />} />
-        <Route path="/student/exam/:examId" element={<ExamApplication />} />
+          {/* ================= STUDENT ================= */}
+          <Route path="/student/exam-entry" element={<ExamEntry />} />
+          <Route path="/student/exam/:examId" element={<ExamApplication />} />
 
-        <Route
-          path="/instructor"
-          element={isInstructor ? <InstructorApp /> : <Navigate to="/" replace />}
-        />
+          {/* ================= INSTRUCTOR ================= */}
+          <Route
+            path="/instructor"
+            element={
+              isInstructor ? <InstructorApp /> : <Navigate to="/" replace />
+            }
+          />
 
-        <Route
-          path="/instructor/results"
-          element={isInstructor ? <ExamResults /> : <Navigate to="/" replace />}
-        />
+          <Route
+            path="/instructor/results"
+            element={
+              isInstructor ? <ExamResults /> : <Navigate to="/" replace />
+            }
+          />
 
-        <Route
-          path="/instructor/manage-courses"
-          element={isInstructor ? <ManageCourses /> : <Navigate to="/" replace />}
-        />
+          <Route
+            path="/instructor/manage-courses"
+            element={
+              isInstructor ? <ManageCourses /> : <Navigate to="/" replace />
+            }
+          />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+          {/* ================= FALLBACK ================= */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

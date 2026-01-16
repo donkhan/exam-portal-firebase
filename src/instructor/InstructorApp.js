@@ -1,88 +1,39 @@
-import { useEffect, useState } from "react";
-import {
-  GoogleAuthProvider,
-  signInWithPopup,
-  onAuthStateChanged,
-  signOut,
-} from "firebase/auth";
+import { useState } from "react";
+import { signOut } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
+
 import { auth } from "./../firebase";
+import { useTheme } from "../ThemeContext";
 
 import ExamResults from "./ExamResults";
 import ManageCourses from "./ManageCourses";
 import ExamManagement from "./ExamManagement";
 
-import "./../App.css";
-
-const INSTRUCTOR_EMAIL = "kamil.k@cmr.edu.in";
+import "./instructor.css";
 
 function InstructorApp() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [view, setView] = useState("home");
   const [selectedExamId, setSelectedExamId] = useState(null);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const login = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-  };
+  const navigate = useNavigate();
+  const { toggleTheme } = useTheme();
 
   const logout = async () => {
     await signOut(auth);
-    setUser(null);
-    setView("home");
+    navigate("/"); // back to HomePage
   };
 
-  /* ---------- LOADING ---------- */
-  if (loading) return <p>Loading...</p>;
-
-  /* ---------- LOGIN ---------- */
-  if (!user) {
-    return (
-      <div className="login-wrapper">
-        <div className="app-container" style={{ maxWidth: "420px" }}>
-          <h2>instructor Portal</h2>
-          <button onClick={login}>Login with Google</button>
-        </div>
-      </div>
-    );
-  }
-
-  /* ---------- ACCESS DENIED ---------- */
-  if (user.email !== INSTRUCTOR_EMAIL) {
-    return (
-      <div className="login-wrapper">
-        <div className="app-container" style={{ maxWidth: "420px" }}>
-          <h2>Instructor Portal</h2>
-          <p className="error">Access denied. Teacher only.</p>
-          <button onClick={logout}>Logout</button>
-        </div>
-      </div>
-    );
-  }
-
-  /* ---------- AUTHORIZED  ---------- */
   return (
-    <div className="app-container">
-      <h2 align="center">Instructor Portal</h2>
+    <div className="instructor-container">
+      {/* ===== HEADER ===== */}
+      <div className="instructor-header">
+        <h2>Instructor Portal</h2>
 
-      <p>
-        <strong>{user.displayName}</strong>
-        <br />
-        {user.email}
-      </p>
+        <button className="secondary" onClick={logout}>
+          Logout
+        </button>
+      </div>
 
-      <button onClick={logout}>Logout</button>
-
-      <hr />
-      <p className="success">✅ Authentication successful</p>
       <hr />
 
       {/* ---------- HOME MENU ---------- */}
@@ -90,13 +41,15 @@ function InstructorApp() {
         <>
           <h3>Actions</h3>
 
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <div className="instructor-card-grid">
             <button onClick={() => setView("manageCourses")}>
-              Manage Courses
+              <span className="card-icon">📘</span>
+              <span className="card-text">Manage Courses</span>
             </button>
 
             <button onClick={() => setView("examManagement")}>
-              Exam Management
+              <span className="card-icon">🧪</span>
+              <span className="card-text">Exam Management</span>
             </button>
           </div>
         </>
@@ -125,6 +78,15 @@ function InstructorApp() {
       {view === "manageCourses" && (
         <ManageCourses onBack={() => setView("home")} />
       )}
+
+      {/* ===== THEME TOGGLE (FAB) ===== */}
+      <button
+        className="theme-fab"
+        onClick={toggleTheme}
+        title="Switch theme"
+      >
+        🌓
+      </button>
     </div>
   );
 }

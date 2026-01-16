@@ -7,10 +7,12 @@ import student2 from "./assets/students/student2.jpg";
 import student3 from "./assets/students/student3.jpg";
 import student4 from "./assets/students/student4.jpg";
 import student5 from "./assets/students/student5.jpg";
+import { useTheme } from "./ThemeContext";
+
 
 function HomePage() {
   const navigate = useNavigate();
-
+  const { toggleTheme } = useTheme(); 
   
   const studentLogin = async () => {
     try {
@@ -31,18 +33,6 @@ function HomePage() {
       alert("Login failed. Please try again.");
     }
   };
-
-  const toggleTheme = () => {
-  const current =
-    document.documentElement.getAttribute("data-theme");
-
-  const next =
-    current === "neo-dark" ? "campus-light" : "neo-dark";
-
-  document.documentElement.setAttribute("data-theme", next);
-  localStorage.setItem("examverse-theme", next);
-};
-
 
   return (
     <div className="home-root">

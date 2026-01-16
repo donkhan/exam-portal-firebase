@@ -6,6 +6,13 @@ body {
   color: #333;
 }
 
+body {
+  background: var(--bg-page);
+  color: var(--text-primary);
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+
 /* Main container */
 .app-container {
   max-width: 900px;
