@@ -1,27 +1,124 @@
-/* ================= NEO DARK (Default) ================= */
-[data-theme="neo-dark"] {
-  --bg-main: #0b0f1a;
-  --bg-card: #11172a;
+/* =========================================================
+   ABSOLUTE CAMPUS-SAFE THEME (EMERGENCY OVERRIDE EDITION)
+   ========================================================= */
 
-  --text-primary: #ffffff;
-  --text-secondary: #a3aed0;
-
-  --accent: #6c8cff;
-
-  --btn-student: #4f7cff;
-  --btn-teacher: #22c55e;
-}
-
-/* ================= CAMPUS LIGHT ================= */
+/* ================= THEME ROOT ================= */
+[data-theme="neo-dark"],
 [data-theme="campus-light"] {
-  --bg-main: #f7f9fc;
+  --bg-main: #ffffff;
   --bg-card: #ffffff;
 
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
+  --text-primary: #020617;
+  --text-secondary: #1e293b;
+  --text-strong: #020617;
 
-  --accent: #2563eb;
+  --accent: #1d4ed8;
 
-  --btn-student: #2563eb;
-  --btn-teacher: #16a34a;
+  --btn-student: #1d4ed8;
+  --btn-teacher: #15803d;
 }
+
+/* ================= FORCE CAMPUS MODE ================= */
+[data-theme="campus-light"] {
+  background: #ffffff !important;
+}
+
+
+/* =========================================================
+   NUCLEAR READABILITY OVERRIDES
+   ========================================================= */
+
+/* Kill ALL opacity */
+[data-theme="campus-light"],
+[data-theme="campus-light"] * {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+/* Kill glass, blur, gradients */
+[data-theme="campus-light"] * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-image: none !important;
+  text-shadow: none !important;
+}
+
+
+/* =========================================================
+   FORCE TEXT VISIBILITY (NO EXCEPTIONS)
+   ========================================================= */
+
+[data-theme="campus-light"] h1,
+[data-theme="campus-light"] h2,
+[data-theme="campus-light"] h3,
+[data-theme="campus-light"] h4,
+[data-theme="campus-light"] h5,
+[data-theme="campus-light"] h6,
+[data-theme="campus-light"] p,
+[data-theme="campus-light"] span,
+[data-theme="campus-light"] label,
+[data-theme="campus-light"] div,
+[data-theme="campus-light"] li,
+[data-theme="campus-light"] a {
+  color: #020617 !important;
+  font-weight: 600 !important;
+}
+
+
+/* Secondary text (explicit only) */
+[data-theme="campus-light"] .text-secondary {
+  color: #1e293b !important;
+  font-weight: 500 !important;
+}
+
+
+/* =========================================================
+   BACKGROUND SAFETY
+   ========================================================= */
+
+/* Neutralize images behind text */
+[data-theme="campus-light"] img,
+[data-theme="campus-light"] video {
+  filter: brightness(0.6) !important;
+}
+
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+[data-theme="campus-light"] button,
+[data-theme="campus-light"] .btn,
+[data-theme="campus-light"] .btn-student,
+[data-theme="campus-light"] .btn-teacher {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+
+/* =========================================================
+   CARD / HERO FIX
+   ========================================================= */
+
+[data-theme="campus-light"] .card,
+[data-theme="campus-light"] .hero,
+[data-theme="campus-light"] .container,
+[data-theme="campus-light"] .content {
+  background: #ffffff !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12) !important;
+}
+
+
+/* =========================================================
+   FINAL GUARANTEE
+   ========================================================= */
+
+/* If text still fades, something is VERY wrong */
+[data-theme="campus-light"] * {
+  visibility: visible !important;
+}
+
+
+/* =========================================================
+   END – THIS FILE TRADES BEAUTY FOR CERTAINTY
+   ========================================================= */
