@@ -1,8 +1,5 @@
 import { act, useEffect, useState } from "react";
-import {
-  onAuthStateChanged,
-  signOut,
-} from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
   collection,
   getDocs,
@@ -22,6 +19,10 @@ import ExamFeedback from "./ExamFeedback";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { MATH_QUOTES } from "../constants/mathQuotes";
+import ExamResult from "./ExamResult";
+import ExamHeader from "./ExamHeader";
+
+import "./student.css";
 
 function ExamApplication() {
   const navigate = useNavigate();
@@ -43,7 +44,6 @@ function ExamApplication() {
 
   const { examId } = useParams();
   const activeExamId = examId;
-  
 
   /* ================= AUTH ================= */
 
@@ -53,11 +53,10 @@ function ExamApplication() {
   }, []);
 
   useEffect(() => {
-  if (user && !exam) {
-    setShowInstructions(true);
-  }
-}, [user, exam]);
-
+    if (user && !exam) {
+      setShowInstructions(true);
+    }
+  }, [user, exam]);
 
   const logout = async () => {
     await signOut(auth);
@@ -71,7 +70,6 @@ function ExamApplication() {
 
   /* ================= RESTORE ACTIVE EXAM ON REFRESH ================= */
 
-  
   useEffect(() => {
     if (!exam?.course_id) return;
 
@@ -94,7 +92,6 @@ function ExamApplication() {
 
   /* ================= REALTIME EXAM LISTENER ================= */
 
-  
   useEffect(() => {
     if (!user || !activeExamId) return;
 
@@ -122,7 +119,7 @@ function ExamApplication() {
     setError("");
     const examDocId = `${activeExamId}_${user.uid}`;
     const examRef = doc(db, "exams", examDocId);
-   
+
     // 🔍 STEP 1: Check if exam already exists
     const existingSnap = await getDoc(examRef);
     if (existingSnap.exists()) {
@@ -190,7 +187,7 @@ function ExamApplication() {
 
     const start = Date.now();
     const end = start + examMeta.duration_minutes * 60 * 1000;
-    
+
     const examDoc = {
       exam_id: activeExamId,
       course_id: examMeta.course_id,
@@ -207,7 +204,6 @@ function ExamApplication() {
       device_type: getDeviceType(),
     };
 
-    
     await setDoc(examRef, examDoc);
     setCurrentIndex(0);
   }
@@ -274,7 +270,7 @@ function ExamApplication() {
     } finally {
       setSubmitting(false);
     }
-    setShowFeedback(true); 
+    setShowFeedback(true);
   }
 
   /* ================= SUBMIT LOCK (75% RULE) ================= */
@@ -302,56 +298,21 @@ function ExamApplication() {
   /* ================= UI ================= */
 
   const q = exam?.questions?.[currentIndex];
-  const quoteForThisQuestion =
-    MATH_QUOTES[currentIndex % MATH_QUOTES.length];
+  const quoteForThisQuestion = MATH_QUOTES[currentIndex % MATH_QUOTES.length];
   return (
     <div className="app-container">
       <h2 align="center">Online Exam</h2>
 
-      {user && <button onClick={logout}>Logout</button>}
-
-      <br />
-      <br />
-
-      {user && (
-        <div className="student-info">
-          <strong>{user.displayName}</strong>
-          <br />
-          {user.email}
-          <br />
-          <button
-            style={{ float: "right", marginBottom: "10px" }}
-            onClick={() => setShowInstructions(true)}
-          >
-            ⓘ Instructions
-          </button>
-
-          <br />
-        </div>
-      )}
-
-      <br />
-
-      {exam && (
-        <div className="exam-info">
-          <strong>Exam ID:</strong> {activeExamId}
-          <br />
-          <strong>Course:</strong> {courseName}
-          <br />
-          <br />
-        </div>
-      )}
-
-      {exam && (
-        <div className="attempt-status">
-          <strong>Attempt Status:</strong>{" "}
-          {exam.status === "IN_PROGRESS" && "In Progress"}
-          {exam.status === "SUBMITTED" && "Submitted (Evaluating)"}
-          {exam.status === "EVALUATED" && "Evaluated"}
-          <br />
-          <br />
-        </div>
-      )}
+      <ExamHeader
+  user={user}
+  exam={exam}
+  activeExamId={activeExamId}
+  courseName={courseName}
+  onLogout={logout}
+  showInstructions={showInstructions}
+  setShowInstructions={setShowInstructions}
+  onJoinExam={joinExam}
+/>
 
       {user && showInstructions && (
         <div className="modal-backdrop">
@@ -376,9 +337,11 @@ function ExamApplication() {
             </p>
           )}
 
-          <div style={{ marginBottom: "6px", fontStyle: "italic", color: "#666" }}>
-  “{quoteForThisQuestion.quote}” — {quoteForThisQuestion.author}
-</div>
+          <div
+            style={{ marginBottom: "6px", fontStyle: "italic", color: "#666" }}
+          >
+            “{quoteForThisQuestion.quote}” — {quoteForThisQuestion.author}
+          </div>
 
           <h3>
             Q{currentIndex + 1}. {q.question_text}
@@ -505,58 +468,24 @@ function ExamApplication() {
               </div>
             </div>
           )}
-          
+
           {showFeedback && exam && user && (
-  <div className="modal-backdrop">
-    <div className="modal">
-      <ExamFeedback
-        exam={exam}
-        user={user}
-        onDone={() => {
-          setShowFeedback(false); // 👈 close popup
-        }}
-      />
-    </div>
-  </div>
-)}
-
-
+            <div className="modal-backdrop">
+              <div className="modal">
+                <ExamFeedback
+                  exam={exam}
+                  user={user}
+                  onDone={() => {
+                    setShowFeedback(false); // 👈 close popup
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
           {exam.status === "SUBMITTED" && <p>Evaluating your answers…</p>}
 
-          {exam.status === "EVALUATED" && (
-            <div className="success">
-              <br />
-              <h3>Result</h3>
-
-              <p>
-                <strong>Score:</strong> {exam.score} / {exam.max_score}
-              </p>
-
-              <p>
-                Correct: {exam.result_summary.correct}
-                <br />
-                Wrong: {exam.result_summary.wrong}
-                <br />
-                Unanswered: {exam.result_summary.unanswered}
-              </p>
-
-              <br />
-
-              <h4>Question-wise Result</h4>
-
-              {exam.question_results.map((res, i) => (
-                <div key={i}>
-                  <strong>Question {i + 1}:</strong>{" "}
-                  {res.is_correct ? "✅ Correct" : "❌ Wrong"}
-                  <br />
-                  Marks Awarded: {res.marks_awarded}
-                  <br />
-                  <br />
-                </div>
-              ))}
-            </div>
-          )}
+          <ExamResult exam={exam} />
         </>
       )}
     </div>
