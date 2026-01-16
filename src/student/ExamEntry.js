@@ -4,6 +4,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { useNavigate } from "react-router-dom";
 import examEntryBg from "../assets/exam-entry-bg.jpg";
+import "./student.css";
 
 function ExamEntry() {
   const navigate = useNavigate();

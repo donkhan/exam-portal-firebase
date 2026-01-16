@@ -178,3 +178,88 @@
   font-weight: 500;
   color: #666;
 }
+
+
+/* =========================
+   STUDENT ENTRY (EXAM HALL)
+   ========================= */
+
+.student-entry-root {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Background image */
+.student-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(1px);
+  transform: scale(1.02);
+}
+
+/* Dark overlay */
+.student-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+/* Card */
+.student-entry-card {
+  position: relative;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 36px 42px;
+  border-radius: 14px;
+  width: 420px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.student-entry-card h2 {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.student-subtitle {
+  font-size: 14px;
+  color: #475569;
+  margin-bottom: 24px;
+}
+
+/* Login button */
+.student-login-btn {
+  width: 100%;
+  padding: 12px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.student-login-btn:hover {
+  background: #1e40af;
+}
+
+/* Rules */
+.student-rules {
+  list-style: none;
+  padding: 0;
+  margin-top: 22px;
+  text-align: left;
+  font-size: 13px;
+  color: #334155;
+}
+
+.student-rules li {
+  margin-bottom: 8px;
+}

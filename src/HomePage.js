@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "./firebase";
 
-/* Student images */
 import student1 from "./assets/students/student1.jpg";
 import student2 from "./assets/students/student2.jpg";
 import student3 from "./assets/students/student3.jpg";
@@ -12,8 +11,7 @@ import student5 from "./assets/students/student5.jpg";
 function HomePage() {
   const navigate = useNavigate();
 
-  /* ================= LOGIN HANDLERS ================= */
-
+  
   const studentLogin = async () => {
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
@@ -27,7 +25,7 @@ function HomePage() {
   const facultyLogin = async () => {
     try {
       await signInWithPopup(auth, new GoogleAuthProvider());
-      navigate("/teacher");
+      navigate("/instructor");
     } catch (err) {
       console.error("Faculty login failed", err);
       alert("Login failed. Please try again.");
