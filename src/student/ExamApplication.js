@@ -1,4 +1,4 @@
-import { act, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import {
   collection,
@@ -11,25 +11,30 @@ import {
   updateDoc,
   onSnapshot,
 } from "firebase/firestore";
-import { getDeviceType } from "../utils/device";
-import { auth, db } from "./../firebase";
-import "./../App.css";
-import ExamInstructions from "./ExamInstructions";
-import ExamFeedback from "./ExamFeedback";
-import { useParams } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-import { MATH_QUOTES } from "../constants/mathQuotes";
-import ExamResult from "./ExamResult";
-import ExamHeader from "./ExamHeader";
+import { useParams, useNavigate } from "react-router-dom";
 
+import { auth, db } from "./../firebase";
+import { getDeviceType } from "../utils/device";
+import { MATH_QUOTES } from "../constants/mathQuotes";
+
+import ExamHeader from "./ExamHeader";
+import ExamQuestionPanel from "./ExamQuestionPanel";
+import ExamActionBar from "./ExamActionBar";
+import ExamResult from "./ExamResult";
+import ExamFeedback from "./ExamFeedback";
+import QuotePanel from "./QuotePanel";
+
+import "./../App.css";
 import "./student.css";
 
 function ExamApplication() {
   const navigate = useNavigate();
+  const { examId } = useParams();
+  const activeExamId = examId;
+
+  /* ================= STATE ================= */
 
   const [user, setUser] = useState(null);
-  const [error, setError] = useState("");
-
   const [exam, setExam] = useState(null);
   const [answers, setAnswers] = useState({});
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -37,13 +42,9 @@ function ExamApplication() {
   const [submitting, setSubmitting] = useState(false);
   const [courseName, setCourseName] = useState("");
 
-  // 🔑 THIS is the missing link earlier
   const [showInstructions, setShowInstructions] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
-
-  const { examId } = useParams();
-  const activeExamId = examId;
 
   /* ================= AUTH ================= */
 
@@ -52,12 +53,6 @@ function ExamApplication() {
     return () => unsub();
   }, []);
 
-  useEffect(() => {
-    if (user && !exam) {
-      setShowInstructions(true);
-    }
-  }, [user, exam]);
-
   const logout = async () => {
     await signOut(auth);
     setUser(null);
@@ -65,38 +60,42 @@ function ExamApplication() {
     setAnswers({});
     setCurrentIndex(0);
     setTimeLeft(null);
-    navigate("/"); // ✅ go back to HomePage
+    navigate("/");
   };
 
-  /* ================= RESTORE ACTIVE EXAM ON REFRESH ================= */
+  /* ================= SHOW INSTRUCTIONS INITIALLY ================= */
+
+  useEffect(() => {
+    if (user && !exam) {
+      setShowInstructions(true);
+    }
+  }, [user, exam]);
+
+  /* ================= COURSE NAME ================= */
 
   useEffect(() => {
     if (!exam?.course_id) return;
 
-    async function fetchCourseName() {
+    (async () => {
       try {
-        const courseRef = doc(db, "courses", exam.course_id);
-        const snap = await getDoc(courseRef);
-        if (snap.exists()) {
-          setCourseName(snap.data().course_name || exam.course_id);
-        } else {
-          setCourseName(exam.course_id);
-        }
+        const snap = await getDoc(doc(db, "courses", exam.course_id));
+        setCourseName(
+          snap.exists()
+            ? snap.data().course_name || exam.course_id
+            : exam.course_id
+        );
       } catch {
         setCourseName(exam.course_id);
       }
-    }
-
-    fetchCourseName();
+    })();
   }, [exam?.course_id]);
 
-  /* ================= REALTIME EXAM LISTENER ================= */
+  /* ================= REALTIME EXAM ================= */
 
   useEffect(() => {
     if (!user || !activeExamId) return;
 
     const examRef = doc(db, "exams", `${activeExamId}_${user.uid}`);
-
     const unsub = onSnapshot(examRef, (snap) => {
       if (!snap.exists()) return;
       const data = snap.data();
@@ -107,88 +106,56 @@ function ExamApplication() {
     return () => unsub();
   }, [user, activeExamId]);
 
-  /* ================= HELPERS ================= */
-
-  function shuffle(arr) {
-    return [...arr].sort(() => Math.random() - 0.5);
-  }
-
-  /* ================= JOIN EXAM ================= */
+  /* ================= JOIN / RESUME EXAM ================= */
 
   async function joinExam() {
-    setError("");
-    const examDocId = `${activeExamId}_${user.uid}`;
-    const examRef = doc(db, "exams", examDocId);
-
-    // 🔍 STEP 1: Check if exam already exists
+    const examRef = doc(db, "exams", `${activeExamId}_${user.uid}`);
     const existingSnap = await getDoc(examRef);
+
     if (existingSnap.exists()) {
-      const existingExam = existingSnap.data();
-
-      // ✅ Exam already finished → show results
-      if (existingExam.submitted) {
-        setCurrentIndex(0);
-        return;
-      }
-
-      // ✅ Exam in progress → resume
       setCurrentIndex(0);
       return;
     }
 
-    // 🆕 STEP 2: Fresh exam creation
     const metaSnap = await getDocs(
-      query(collection(db, "exams_meta"), where("exam_id", "==", activeExamId)),
+      query(collection(db, "exams_meta"), where("exam_id", "==", activeExamId))
     );
 
     const examMeta = metaSnap.docs[0].data();
-    if (!examMeta.active) return setError("Exam not active");
+    if (!examMeta.active) return;
 
     const qSnap = await getDocs(
       query(
         collection(db, "questions"),
-        where("course_id", "==", examMeta.course_id),
-      ),
+        where("course_id", "==", examMeta.course_id)
+      )
     );
 
-    let allQuestions = qSnap.docs.map((d) => {
-      const q = d.data();
-      return {
-        id: d.id,
-        question_text: q.question_text,
-        options: q.options,
-        question_type: q.question_type,
-        marks: q.marks,
-        difficulty: q.difficulty,
-        chapter: q.chapter,
-      };
-    });
+    let allQuestions = qSnap.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    }));
 
     if (!examMeta.question_types.includes("ALL")) {
       allQuestions = allQuestions.filter((q) =>
-        examMeta.question_types.includes(q.question_type),
+        examMeta.question_types.includes(q.question_type)
       );
     }
 
     if (!examMeta.chapters.includes("ALL")) {
       allQuestions = allQuestions.filter((q) =>
-        examMeta.chapters.includes(q.chapter),
+        examMeta.chapters.includes(q.chapter)
       );
     }
 
-    if (allQuestions.length < examMeta.total_questions) {
-      return setError("Not enough questions");
-    }
-
-    const selectedQuestions = shuffle(allQuestions).slice(
-      0,
-      examMeta.total_questions,
-    );
+    const selectedQuestions = allQuestions
+      .sort(() => Math.random() - 0.5)
+      .slice(0, examMeta.total_questions);
 
     const start = Date.now();
     const end = start + examMeta.duration_minutes * 60 * 1000;
 
-    const examDoc = {
+    await setDoc(examRef, {
       exam_id: activeExamId,
       course_id: examMeta.course_id,
       user_id: user.uid,
@@ -202,16 +169,15 @@ function ExamApplication() {
       end_at: end,
       allowEarlySubmit: examMeta.allowEarlySubmit ?? false,
       device_type: getDeviceType(),
-    };
+    });
 
-    await setDoc(examRef, examDoc);
     setCurrentIndex(0);
   }
 
   /* ================= TIMER ================= */
 
   useEffect(() => {
-    if (!exam || exam.submitted) return;
+    if (!exam || exam.submitted || !exam.end_at) return;
 
     const interval = setInterval(() => {
       const remaining = exam.end_at - Date.now();
@@ -236,22 +202,22 @@ function ExamApplication() {
     });
   }
 
-  const selectMCQ = (k) => {
-    if (exam.submitted) return;
-    persist({ ...answers, [currentIndex]: [k] });
-  };
+  const selectMCQ = (k) =>
+    !exam.submitted && persist({ ...answers, [currentIndex]: [k] });
 
   const toggleMSQ = (k) => {
     if (exam.submitted) return;
     const cur = answers[currentIndex] || [];
-    const upd = cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k];
-    persist({ ...answers, [currentIndex]: upd });
+    persist({
+      ...answers,
+      [currentIndex]: cur.includes(k)
+        ? cur.filter((x) => x !== k)
+        : [...cur, k],
+    });
   };
 
-  const updateFill = (v) => {
-    if (exam.submitted) return;
-    persist({ ...answers, [currentIndex]: v });
-  };
+  const updateFill = (v) =>
+    !exam.submitted && persist({ ...answers, [currentIndex]: v });
 
   /* ================= SUBMIT ================= */
 
@@ -260,234 +226,134 @@ function ExamApplication() {
 
     setSubmitting(true);
 
-    try {
-      await updateDoc(doc(db, "exams", `${exam.exam_id}_${user.uid}`), {
-        submitted: true,
-        submitted_at: Date.now(),
-        submission_type: reason,
-        status: "SUBMITTED",
-      });
-    } finally {
-      setSubmitting(false);
-    }
+    await updateDoc(doc(db, "exams", `${exam.exam_id}_${user.uid}`), {
+      submitted: true,
+      submitted_at: Date.now(),
+      submission_type: reason,
+      status: "SUBMITTED",
+    });
+
+    setSubmitting(false);
     setShowFeedback(true);
   }
 
-  /* ================= SUBMIT LOCK (75% RULE) ================= */
+  /* ================= SUBMIT LOCK ================= */
 
   let canSubmit = true;
   let submitUnlockInSec = 0;
 
-  if (exam && !exam.submitted) {
-    const durationMs = exam.end_at - exam.started_at;
-    const elapsedMs = Date.now() - exam.started_at;
-    const minSubmitMs = durationMs * 0.75;
+  if (
+    exam &&
+    !exam.submitted &&
+    typeof exam.started_at === "number" &&
+    typeof exam.end_at === "number"
+  ) {
+    const duration = exam.end_at - exam.started_at;
+    const elapsed = Date.now() - exam.started_at;
+    const minSubmit = duration * 0.75;
 
-    if (!exam.allowEarlySubmit && elapsedMs < minSubmitMs) {
+    if (!exam.allowEarlySubmit && elapsed < minSubmit) {
       canSubmit = false;
-      submitUnlockInSec = Math.ceil((minSubmitMs - elapsedMs) / 1000);
+      submitUnlockInSec = Math.max(
+        0,
+        Math.ceil((minSubmit - elapsed) / 1000)
+      );
     }
   }
-
-  const formatMMSS = (sec) => {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${String(s).padStart(2, "0")}`;
-  };
 
   /* ================= UI ================= */
 
   const q = exam?.questions?.[currentIndex];
-  const quoteForThisQuestion = MATH_QUOTES[currentIndex % MATH_QUOTES.length];
+  const quote = MATH_QUOTES[currentIndex % MATH_QUOTES.length];
+
   return (
     <div className="app-container">
       <h2 align="center">Online Exam</h2>
 
       <ExamHeader
-  user={user}
-  exam={exam}
-  activeExamId={activeExamId}
-  courseName={courseName}
-  onLogout={logout}
-  showInstructions={showInstructions}
-  setShowInstructions={setShowInstructions}
-  onJoinExam={joinExam}
-/>
+        user={user}
+        exam={exam}
+        activeExamId={activeExamId}
+        courseName={courseName}
+        onLogout={logout}
+        showInstructions={showInstructions}
+        setShowInstructions={setShowInstructions}
+        onJoinExam={joinExam}
+      />
 
-      {user && showInstructions && (
+      <QuotePanel quote={quote} />
+
+      <ExamQuestionPanel
+        exam={exam}
+        q={q}
+        currentIndex={currentIndex}
+        answers={answers}
+        timeLeft={timeLeft}
+        onPrev={() => setCurrentIndex((i) => i - 1)}
+        onNext={() => setCurrentIndex((i) => i + 1)}
+        onJump={(i) => setCurrentIndex(i)}
+        onSelectMCQ={selectMCQ}
+        onToggleMSQ={toggleMSQ}
+        onUpdateFill={updateFill}
+      />
+
+      {exam?.questions && (
+        <ExamActionBar
+          exam={exam}
+          currentIndex={currentIndex}
+          totalQuestions={exam.questions.length}
+          canSubmit={canSubmit}
+          submitting={submitting}
+          submitUnlockInSec={submitUnlockInSec}
+          onSubmitClick={() => setShowSubmitModal(true)}
+        />
+      )}
+
+      {/* SUBMIT MODAL */}
+      {showSubmitModal && (
         <div className="modal-backdrop">
           <div className="modal">
-            <ExamInstructions
-              showClose
-              onProceed={() => {
-                setShowInstructions(false);
-                joinExam(); // before exam → start exam
-              }}
+            <h3>Confirm Submission</h3>
+
+            <p>
+              Are you sure you want to submit the exam?
+              <br />
+              <strong>This action cannot be undone.</strong>
+            </p>
+
+            <div className="modal-actions">
+              <button onClick={() => setShowSubmitModal(false)}>
+                Cancel
+              </button>
+
+              <button
+                disabled={submitting}
+                onClick={() => {
+                  setShowSubmitModal(false);
+                  finalizeSubmission("manual");
+                }}
+              >
+                Yes, Submit Exam
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FEEDBACK MODAL */}
+      {showFeedback && exam && user && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <ExamFeedback
+              exam={exam}
+              user={user}
+              onDone={() => setShowFeedback(false)}
             />
           </div>
         </div>
       )}
 
-      {exam && q && (
-        <>
-          {!exam.submitted && timeLeft !== null && (
-            <p>
-              Time Left: {Math.floor(timeLeft / 60)}:
-              {String(timeLeft % 60).padStart(2, "0")}
-            </p>
-          )}
-
-          <div
-            style={{ marginBottom: "6px", fontStyle: "italic", color: "#666" }}
-          >
-            “{quoteForThisQuestion.quote}” — {quoteForThisQuestion.author}
-          </div>
-
-          <h3>
-            Q{currentIndex + 1}. {q.question_text}
-          </h3>
-
-          {q.question_type === "MCQ" &&
-            Object.entries(q.options).map(([k, v], idx) => (
-              <label key={k} className="mcq-option">
-                <input
-                  type="radio"
-                  name={`q-${q.question_id}`}
-                  checked={answers[currentIndex]?.[0] === k}
-                  onChange={() => selectMCQ(k)}
-                />
-                <span className="option-key">{k}.</span>
-                <span className="option-text">{v}</span>
-              </label>
-            ))}
-
-          {q.question_type === "MSQ" &&
-            Object.entries(q.options).map(([k, v]) => (
-              <label key={k}>
-                <input
-                  type="checkbox"
-                  checked={(answers[currentIndex] || []).includes(k)}
-                  onChange={() => toggleMSQ(k)}
-                />
-                {k}. {v}
-              </label>
-            ))}
-
-          {q.question_type === "FILL_BLANK" && (
-            <input
-              value={answers[currentIndex] || ""}
-              onChange={(e) => updateFill(e.target.value)}
-            />
-          )}
-
-          <br />
-          <br />
-
-          <div className="question-nav">
-            <button
-              disabled={currentIndex === 0}
-              onClick={() => setCurrentIndex((i) => i - 1)}
-            >
-              Prev
-            </button>
-
-            <button
-              disabled={currentIndex === exam.questions.length - 1}
-              onClick={() => setCurrentIndex((i) => i + 1)}
-            >
-              Next
-            </button>
-
-            <select
-              value={currentIndex}
-              disabled={exam.submitted}
-              onChange={(e) => setCurrentIndex(Number(e.target.value))}
-              className="question-jump"
-            >
-              {exam.questions.map((_, i) => (
-                <option key={i} value={i}>
-                  Q{i + 1}
-                </option>
-              ))}
-            </select>
-
-            {currentIndex === exam.questions.length - 1 && !exam.submitted && (
-              <>
-                <button
-                  disabled={submitting || !canSubmit}
-                  onClick={() => setShowSubmitModal(true)}
-                  style={{
-                    opacity: canSubmit ? 1 : 0.6,
-                    cursor: canSubmit ? "pointer" : "not-allowed",
-                  }}
-                >
-                  Submit
-                </button>
-
-                {!canSubmit && (
-                  <p
-                    style={{
-                      fontSize: "12px",
-                      color: "#666",
-                      marginTop: "6px",
-                    }}
-                  >
-                    Submit available in{" "}
-                    <strong>{formatMMSS(submitUnlockInSec)}</strong>
-                  </p>
-                )}
-              </>
-            )}
-          </div>
-          {showSubmitModal && (
-            <div className="modal-backdrop">
-              <div className="modal">
-                <h3>Confirm Submission</h3>
-
-                <p>
-                  Are you sure you want to submit the exam?
-                  <br />
-                  <strong>This action cannot be undone.</strong>
-                </p>
-
-                <div className="modal-actions">
-                  <button onClick={() => setShowSubmitModal(false)}>
-                    Cancel
-                  </button>
-
-                  <button
-                    disabled={submitting}
-                    onClick={() => {
-                      setShowSubmitModal(false);
-                      finalizeSubmission("manual");
-                    }}
-                  >
-                    Yes, Submit Exam
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {showFeedback && exam && user && (
-            <div className="modal-backdrop">
-              <div className="modal">
-                <ExamFeedback
-                  exam={exam}
-                  user={user}
-                  onDone={() => {
-                    setShowFeedback(false); // 👈 close popup
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {exam.status === "SUBMITTED" && <p>Evaluating your answers…</p>}
-
-          <ExamResult exam={exam} />
-        </>
-      )}
+      <ExamResult exam={exam} />
     </div>
   );
 }
