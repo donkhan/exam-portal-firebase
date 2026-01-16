@@ -11,9 +11,9 @@ import ExamEntry from "./student/ExamEntry";
 import ExamApplication from "./student/ExamApplication";
 
 /* ===== TEACHER FLOW ===== */
-import TeacherApp from "./teacher/TeacherApp";
-import ExamResults from "./teacher/ExamResults";
-import ManageCourses from "./teacher/ManageCourses";
+import TeacherApp from "./instructor/InstructorApp";
+import ExamResults from "./instructor/ExamResults";
+import ManageCourses from "./instructor/ManageCourses";
 
 const TEACHER_EMAIL = "kamil.k@cmr.edu.in";
 
