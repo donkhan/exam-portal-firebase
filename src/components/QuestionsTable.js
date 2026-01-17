@@ -192,6 +192,8 @@ function QuestionsTable({ selectedCourseId }) {
           <option value={10}>10</option>
           <option value={20}>20</option>
           <option value={50}>50</option>
+          <option value={50}>100</option>
+          
         </select>
       </span>
     </div>
