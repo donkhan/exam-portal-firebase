@@ -33,7 +33,7 @@ function QuestionsTable({ selectedCourseId }) {
   useEffect(() => {
     if (!selectedCourseId) return;
     fetchFirstPage();
-  }, [selectedCourseId]);
+  }, [selectedCourseId, pageSize]); // ✅ pageSize drives reload
 
   /* ===================== FIRESTORE FETCH ===================== */
 
@@ -149,7 +149,6 @@ function QuestionsTable({ selectedCourseId }) {
 
     await updateDoc(doc(db, "questions", q.id), payload);
 
-    // local update (no paging reset)
     setQuestions((prev) =>
       prev.map((item) => (item.id === q.id ? { ...item, ...payload } : item)),
     );
@@ -179,6 +178,7 @@ function QuestionsTable({ selectedCourseId }) {
       <button onClick={fetchNextPage} disabled={questions.length < pageSize}>
         Next ▶
       </button>
+
       <span style={{ marginLeft: "20px" }}>
         Page size:{" "}
         <select
@@ -186,7 +186,6 @@ function QuestionsTable({ selectedCourseId }) {
           onChange={(e) => {
             setPageSize(Number(e.target.value));
             setPageStack([]);
-            fetchFirstPage();
           }}
         >
           <option value={5}>5</option>
@@ -206,7 +205,6 @@ function QuestionsTable({ selectedCourseId }) {
 
   return (
     <>
-      {/* 🔁 Paging Controls */}
       <PagingControls />
 
       <table
@@ -251,7 +249,6 @@ function QuestionsTable({ selectedCourseId }) {
                 <td>{q.question_type}</td>
                 <td>{q.marks}</td>
 
-                {/* QUESTION TEXT */}
                 <td>
                   {isEditing ? (
                     <textarea
@@ -270,7 +267,6 @@ function QuestionsTable({ selectedCourseId }) {
                   )}
                 </td>
 
-                {/* OPTIONS (read-only always) */}
                 <td>
                   {q.options && Object.keys(q.options).length > 0 ? (
                     Object.entries(q.options).map(([k, v]) => (
@@ -283,11 +279,10 @@ function QuestionsTable({ selectedCourseId }) {
                   )}
                 </td>
 
-                {/* CORRECT ANSWER */}
+                {/* ✅ FIXED JSX TERNARY */}
                 <td>
                   {isEditing ? (
                     q.options && Object.keys(q.options).length > 0 ? (
-                      /* MCQ → dropdown */
                       <select
                         value={editData.correct_answer || ""}
                         onChange={(e) =>
@@ -305,7 +300,6 @@ function QuestionsTable({ selectedCourseId }) {
                         ))}
                       </select>
                     ) : (
-                      /* Non-MCQ */
                       <input
                         type="text"
                         value={editData.correct_answer || ""}
@@ -324,7 +318,6 @@ function QuestionsTable({ selectedCourseId }) {
                   )}
                 </td>
 
-                {/* ACTIONS */}
                 <td>
                   {isEditing ? (
                     <>
@@ -361,6 +354,7 @@ function QuestionsTable({ selectedCourseId }) {
           })}
         </tbody>
       </table>
+
       <PagingControls />
     </>
   );
