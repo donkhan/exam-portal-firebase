@@ -16,6 +16,7 @@ function QuestionBankManagement({
   onBack,
   courseId: fixedCourseId,
   courseName,
+  onCreateExam, // ✅ ADDED
 }) {
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(fixedCourseId || "");
@@ -51,7 +52,7 @@ function QuestionBankManagement({
       fileInputRef,
     });
     if (text) {
-      setJsonText(text); // 👈 feeds JsonPasteUpload
+      setJsonText(text);
     }
   };
 
@@ -63,7 +64,7 @@ function QuestionBankManagement({
       setStatus,
     });
     if (success) {
-      loadQuestions(selectedCourse); // 👈 SINGLE source of truth
+      loadQuestions(selectedCourse);
     }
   };
 
@@ -71,11 +72,13 @@ function QuestionBankManagement({
 
   return (
     <div style={{ padding: "20px" }}>
-      <h3>Question Bank </h3>
+      <h3>Question Bank</h3>
 
       <button onClick={onBack}>← Back</button>
 
       <br />
+
+      {/* 🔹 COURSE HEADER + CREATE EXAM */}
       <div
         style={{
           marginTop: "10px",
@@ -84,9 +87,21 @@ function QuestionBankManagement({
           background: "#f4f6f8",
           border: "1px solid #dce3ea",
           borderRadius: 4,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        <strong>Course:</strong> {courseName}
+        <div>
+          <strong>Course:</strong> {courseName}
+        </div>
+
+        <button
+          onClick={() => onCreateExam(fixedCourseId, courseName)}
+          disabled={!questions || questions.length === 0}
+        >
+          Create Exam
+        </button>
       </div>
 
       {selectedCourse && (
@@ -114,10 +129,7 @@ function QuestionBankManagement({
         jsonText={jsonText}
       />
 
-       <QuestionsTable selectedCourseId={selectedCourse} />
-
-
-
+      <QuestionsTable selectedCourseId={selectedCourse} />
     </div>
   );
 }

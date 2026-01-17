@@ -115,10 +115,17 @@ function ManageCourses({ onBack }) {
   if (viewQBForCourse) {
     return (
       <QuestionBankManagement
-        courseId={viewQBForCourse.id}
-        courseName={viewQBForCourse.name}
-        onBack={() => setViewQBForCourse(null)}
-      />
+  courseId={viewQBForCourse.id}
+  courseName={viewQBForCourse.name}
+  onBack={() => setViewQBForCourse(null)}
+  onCreateExam={(courseId, courseName) => {
+    setCreateExamForCourse({
+      id: courseId,
+      name: courseName,
+    });
+  }}
+/>
+
     );
   }
 
