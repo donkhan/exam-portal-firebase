@@ -8,7 +8,6 @@ const ExamActionBar = ({
   canSubmit,
   submitting,
   submitUnlockInSec,
-  formatMMSS,
   onSubmitClick,
 }) => {
   if (!exam || exam.submitted) return null;
