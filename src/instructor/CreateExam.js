@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
+import { useNavigate } from "react-router-dom"; // ✅ ADD
 import { db } from "./../firebase";
 import { getChaptersForCourse } from "./../services/questions.service";
 import { createExamIfNotExists } from "./../services/exam.service";
@@ -7,6 +8,9 @@ import { createExamIfNotExists } from "./../services/exam.service";
 function CreateExam({ preselectedCourseId, preselectedCourseName, onBack }) {
   /* ---------- MODE ---------- */
   const isCourseLocked = Boolean(preselectedCourseId);
+
+  /* ---------- NAV ---------- */
+  const navigate = useNavigate(); // ✅ ADD
 
   /* ---------- COURSE STATE ---------- */
   const [courses, setCourses] = useState([]);
@@ -22,9 +26,10 @@ function CreateExam({ preselectedCourseId, preselectedCourseName, onBack }) {
   const [duration, setDuration] = useState(20);
   const [questionCount, setQuestionCount] = useState(10);
   const [status, setStatus] = useState("");
+  const [createdExamId, setCreatedExamId] = useState(null); // ✅ ADD
+
   /* ---------- SUBMISSION RULE ---------- */
   const [allowEarlySubmit, setAllowEarlySubmit] = useState(false);
-  
 
   /* ---------- LOAD COURSES (ONLY IF REQUIRED) ---------- */
   useEffect(() => {
@@ -99,6 +104,7 @@ function CreateExam({ preselectedCourseId, preselectedCourseName, onBack }) {
       return;
     }
 
+    setCreatedExamId(examId); // ✅ ENABLE PREVIEW
     setStatus(
       `✅ Exam created successfully
 Exam ID: ${examId}
@@ -176,13 +182,11 @@ Chapters: ${selectedChapters.join(", ")}`
                   type="checkbox"
                   checked={selectedChapters.includes(ch)}
                   onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedChapters([...selectedChapters, ch]);
-                    } else {
-                      setSelectedChapters(
-                        selectedChapters.filter((c) => c !== ch)
-                      );
-                    }
+                    setSelectedChapters(
+                      e.target.checked
+                        ? [...selectedChapters, ch]
+                        : selectedChapters.filter((c) => c !== ch)
+                    );
                   }}
                 />{" "}
                 {ch}
@@ -219,33 +223,41 @@ Chapters: ${selectedChapters.join(", ")}`
       </div>
 
       {/* SUBMISSION RULE */}
-<div
-  style={{
-    marginTop: "15px",
-    marginBottom: "15px",
-    padding: "10px 12px",
-    background: "#f9fafb",
-    border: "1px solid #e5e7eb",
-    borderRadius: 4,
-  }}
->
-  <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-    <input
-      type="checkbox"
-      checked={!allowEarlySubmit}
-      onChange={(e) => setAllowEarlySubmit(!e.target.checked)}
-    />
-    <strong>Prevent early submission (recommended)</strong>
-  </label>
+      <div
+        style={{
+          marginTop: "15px",
+          marginBottom: "15px",
+          padding: "10px 12px",
+          background: "#f9fafb",
+          border: "1px solid #e5e7eb",
+          borderRadius: 4,
+        }}
+      >
+        <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <input
+            type="checkbox"
+            checked={!allowEarlySubmit}
+            onChange={(e) => setAllowEarlySubmit(!e.target.checked)}
+          />
+          <strong>Prevent early submission (recommended)</strong>
+        </label>
 
-  <p style={{ fontSize: "12px", color: "#666", marginTop: "6px" }}>
-    Students can submit only after <strong>75% of exam time</strong> is completed.
-    Uncheck to allow submission anytime.
-  </p>
-</div>
-
+        <p style={{ fontSize: "12px", color: "#666", marginTop: "6px" }}>
+          Students can submit only after <strong>75% of exam time</strong> is completed.
+          Uncheck to allow submission anytime.
+        </p>
+      </div>
 
       <button onClick={createExam}>Create Exam</button>
+
+      {/* ✅ PREVIEW / TAKE EXAM */}
+      <button
+        style={{ marginLeft: "10px" }}
+        disabled={!createdExamId}
+        onClick={() => navigate(`/exam/${createdExamId}`)}
+      >
+        Preview / Take Exam
+      </button>
 
       {status && (
         <pre style={{ marginTop: "15px", whiteSpace: "pre-wrap" }}>

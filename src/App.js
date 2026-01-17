@@ -17,8 +17,8 @@ import ExamApplication from "./student/ExamApplication";
 import InstructorApp from "./instructor/InstructorApp";
 import ExamResults from "./instructor/ExamResults";
 import ManageCourses from "./instructor/ManageCourses";
+import { isInstructor } from "./utils/isInstructor";
 
-const INSTRUCTOR_EMAIL = "kamil.k@cmr.edu.in";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -34,7 +34,7 @@ function App() {
 
   if (loading) return <p>Loading...</p>;
 
-  const isInstructor = user?.email === INSTRUCTOR_EMAIL;
+  const instructor = isInstructor(user);
 
   return (
     <ThemeProvider>
@@ -51,21 +51,23 @@ function App() {
           <Route
             path="/instructor"
             element={
-              isInstructor ? <InstructorApp /> : <Navigate to="/" replace />
+              instructor ? <InstructorApp /> : <Navigate to="/" replace />
             }
           />
+         <Route path="/exam/:examId" element={<ExamApplication />} />
+
 
           <Route
             path="/instructor/results"
             element={
-              isInstructor ? <ExamResults /> : <Navigate to="/" replace />
+              instructor ? <ExamResults /> : <Navigate to="/" replace />
             }
           />
 
           <Route
             path="/instructor/manage-courses"
             element={
-              isInstructor ? <ManageCourses /> : <Navigate to="/" replace />
+              instructor ? <ManageCourses /> : <Navigate to="/" replace />
             }
           />
 

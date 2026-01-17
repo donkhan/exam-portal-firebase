@@ -26,6 +26,8 @@ import QuotePanel from "./QuotePanel";
 
 import "./../App.css";
 import "./student.css";
+import { isInstructor } from "../utils/isInstructor";
+
 
 function ExamApplication() {
   const navigate = useNavigate();
@@ -269,6 +271,23 @@ function ExamApplication() {
   return (
     <div className="app-container">
       <h2 align="center">Online Exam</h2>
+      {isInstructor(user) && (
+  <div style={{ marginBottom: "10px" }}>
+    <button
+      onClick={() => navigate(-1)}
+      style={{
+        background: "transparent",
+        border: "none",
+        color: "#2563eb",
+        cursor: "pointer",
+        fontSize: "14px",
+        padding: 0,
+      }}
+    >
+      ← Back to Dashboard
+    </button>
+  </div>
+)}
 
       <ExamHeader
         user={user}
