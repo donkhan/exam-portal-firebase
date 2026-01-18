@@ -6,8 +6,8 @@ import StudentAttemptDetails from "./StudentAttemptDetails";
 import { renderDevice } from "../utils/device";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { formatDateTime, formatDuration } from "../utils/time";
+import { isInstructor } from "../utils/isInstructor";
 
-const TEACHER_EMAIL = "kamil.k@cmr.edu.in";
 
 export default function ExamResults({ examId, onBack }) {
   const [attempts, setAttempts] = useState([]);
@@ -123,7 +123,7 @@ export default function ExamResults({ examId, onBack }) {
   }, [examId]);
 
   /* ---------- ACCESS CONTROL ---------- */
-  if (!user || user.email !== TEACHER_EMAIL) {
+  if (!user || isInstructor(user)) {
     return <h3>Access Denied</h3>;
   }
 
