@@ -5,7 +5,7 @@ import { getAuth } from "firebase/auth";
 import StudentAttemptDetails from "./StudentAttemptDetails";
 import { renderDevice } from "../utils/device";
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { formatDateTime } from "../utils/time";
+import { formatDateTime, formatDuration } from "../utils/time";
 
 const TEACHER_EMAIL = "kamil.k@cmr.edu.in";
 
@@ -176,13 +176,7 @@ export default function ExamResults({ examId, onBack }) {
   };
 
   
-  const formatDuration = (seconds) => {
-    if (!seconds || seconds <= 0) return "—";
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}m ${secs}s`;
-  };
-
+  
   const toJsDate = (ts) => {
     if (!ts) return null;
     if (ts.toDate) return ts.toDate(); // Firestore Timestamp

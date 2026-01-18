@@ -10,3 +10,11 @@ export function formatDateTime(ts) {
     const date = ts.toDate ? ts.toDate() : new Date(ts);
     return date.toLocaleString();
 }
+
+
+export function formatDuration(seconds){
+    if (!seconds || seconds <= 0) return "—";
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${secs}s`;
+}

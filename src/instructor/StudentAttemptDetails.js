@@ -1,6 +1,6 @@
 import { deleteDoc, doc } from "firebase/firestore";
 import { db } from "../firebase";
-import { formatDateTime } from "../utils/time";
+import { formatDateTime,formatDuration } from "../utils/time";
 
 export default function StudentAttemptDetails({ attempt, onBack }) {
   const { questions = [], answers = {}, question_results = [] } = attempt;
@@ -141,8 +141,11 @@ export default function StudentAttemptDetails({ attempt, onBack }) {
     <div>End Time: <strong>{formatDateTime(attempt.submitted_at)}</strong></div>
     <br></br>
     <div>
-      Duration: <strong>1h 30m</strong>
-      
+      Duration: 
+      <strong>
+  {formatDuration(Math.floor((attempt.submitted_at - attempt.started_at) / 1000))}
+</strong>
+
     </div>
   </div>
 </div>
