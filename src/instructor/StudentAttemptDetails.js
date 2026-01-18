@@ -1,5 +1,6 @@
 import { deleteDoc, doc } from "firebase/firestore";
 import { db } from "../firebase";
+import { formatDateTime } from "../utils/time";
 
 export default function StudentAttemptDetails({ attempt, onBack }) {
   const { questions = [], answers = {}, question_results = [] } = attempt;
@@ -66,6 +67,87 @@ export default function StudentAttemptDetails({ attempt, onBack }) {
         {attempt.user_name} ({attempt.user_email})
       </h3>
 
+      
+      <button onClick={() => window.print()}>Download PDF</button>
+      <div
+        style={{
+          marginTop: 10,
+          marginBottom: 15,
+          padding: "10px 14px",
+          background: "#f6fff2",
+          border: "1px solid #cdecc1",
+          borderRadius: 6,
+          fontSize: 16,
+          fontWeight: "bold",
+        }}
+      >
+        Total Marks: {totalMarksAwarded} / {totalPossibleMarks}
+      </div>
+
+      <table
+        border="1"
+        cellPadding="8"
+        style={{ borderCollapse: "collapse", width: "100%" }}
+      >
+        <thead style={{ background: "#f0f0f0" }}>
+          <tr>
+            <th>#</th>
+            <th>Question</th>
+            <th>Difficulty</th>
+            <th>Student Answer</th>
+            <th>Correct Answer</th>
+            <th>Result</th>
+            <th>Marks</th>
+            <th>Marks Awarded</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {questions.map((q, i) => {
+            const studentAnswer = answers[i];
+            const result = question_results[i];
+
+            return (
+              <tr key={q.id}>
+                <td>{i + 1}</td>
+                <td>{q.question_text}</td>
+                <td>{q.difficulty}</td>
+                <td>{studentAnswer ?? "-"}</td>
+                <td>{result?.correct_answer ?? "-"}</td>
+                <td>{result?.is_correct ? "✔ Correct" : "✘ Wrong"}</td>
+                <td>{q.marks ?? "-"}</td>
+                <td>{result?.marks_awarded ?? 0}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <div
+  style={{
+    marginTop: 12,
+    marginBottom: 16,
+    padding: "10px 14px",
+    border: "1px solid #d6e4ff",
+    background: "#f5f8ff",
+    borderRadius: 6,
+    fontSize: 14,
+  }}
+>
+  <strong>⏱ Exam Timing</strong>
+
+  <div style={{ marginTop: 6 }}>
+    <div>Start Time: <strong>{formatDateTime(attempt.started_at)}</strong></div>
+    <br></br>
+    <div>End Time: <strong>{formatDateTime(attempt.submitted_at)}</strong></div>
+    <br></br>
+    <div>
+      Duration: <strong>1h 30m</strong>
+      
+    </div>
+  </div>
+</div>
+    
+
       {attempt.feedback ? (
         <div
           style={{
@@ -122,60 +204,6 @@ export default function StudentAttemptDetails({ attempt, onBack }) {
         </div>
       )}
 
-      <button onClick={() => window.print()}>Download PDF</button>
-      <div
-        style={{
-          marginTop: 10,
-          marginBottom: 15,
-          padding: "10px 14px",
-          background: "#f6fff2",
-          border: "1px solid #cdecc1",
-          borderRadius: 6,
-          fontSize: 16,
-          fontWeight: "bold",
-        }}
-      >
-        Total Marks: {totalMarksAwarded} / {totalPossibleMarks}
-      </div>
-
-      <table
-        border="1"
-        cellPadding="8"
-        style={{ borderCollapse: "collapse", width: "100%" }}
-      >
-        <thead style={{ background: "#f0f0f0" }}>
-          <tr>
-            <th>#</th>
-            <th>Question</th>
-            <th>Difficulty</th>
-            <th>Student Answer</th>
-            <th>Correct Answer</th>
-            <th>Result</th>
-            <th>Marks</th>
-            <th>Marks Awarded</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {questions.map((q, i) => {
-            const studentAnswer = answers[i];
-            const result = question_results[i];
-
-            return (
-              <tr key={q.id}>
-                <td>{i + 1}</td>
-                <td>{q.question_text}</td>
-                <td>{q.difficulty}</td>
-                <td>{studentAnswer ?? "-"}</td>
-                <td>{result?.correct_answer ?? "-"}</td>
-                <td>{result?.is_correct ? "✔ Correct" : "✘ Wrong"}</td>
-                <td>{q.marks ?? "-"}</td>
-                <td>{result?.marks_awarded ?? 0}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { getAuth } from "firebase/auth";
 import StudentAttemptDetails from "./StudentAttemptDetails";
 import { renderDevice } from "../utils/device";
 import { getFunctions, httpsCallable } from "firebase/functions";
+import { formatDateTime } from "../utils/time";
 
 const TEACHER_EMAIL = "kamil.k@cmr.edu.in";
 
@@ -174,12 +175,7 @@ export default function ExamResults({ examId, onBack }) {
     URL.revokeObjectURL(url);
   };
 
-  const formatDateTime = (ts) => {
-    if (!ts) return "—";
-    const date = ts.toDate ? ts.toDate() : new Date(ts);
-    return date.toLocaleString();
-  };
-
+  
   const formatDuration = (seconds) => {
     if (!seconds || seconds <= 0) return "—";
     const mins = Math.floor(seconds / 60);
