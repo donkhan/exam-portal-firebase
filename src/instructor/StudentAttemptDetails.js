@@ -1,6 +1,6 @@
 import { deleteDoc, doc } from "firebase/firestore";
 import { db } from "../firebase";
-import { formatDateTime,formatDuration } from "../utils/time";
+import { formatDateTime, formatDuration } from "../utils/time";
 
 export default function StudentAttemptDetails({ attempt, onBack }) {
   const { questions = [], answers = {}, question_results = [] } = attempt;
@@ -67,7 +67,6 @@ export default function StudentAttemptDetails({ attempt, onBack }) {
         {attempt.user_name} ({attempt.user_email})
       </h3>
 
-      
       <button onClick={() => window.print()}>Download PDF</button>
       <div
         style={{
@@ -123,33 +122,37 @@ export default function StudentAttemptDetails({ attempt, onBack }) {
         </tbody>
       </table>
       <div
-  style={{
-    marginTop: 12,
-    marginBottom: 16,
-    padding: "10px 14px",
-    border: "1px solid #d6e4ff",
-    background: "#f5f8ff",
-    borderRadius: 6,
-    fontSize: 14,
-  }}
->
-  <strong>⏱ Exam Timing</strong>
+        style={{
+          marginTop: 12,
+          marginBottom: 16,
+          padding: "10px 14px",
+          border: "1px solid #d6e4ff",
+          background: "#f5f8ff",
+          borderRadius: 6,
+          fontSize: 14,
+        }}
+      >
+        <strong>⏱ Exam Timing</strong>
 
-  <div style={{ marginTop: 6 }}>
-    <div>Start Time: <strong>{formatDateTime(attempt.started_at)}</strong></div>
-    <br></br>
-    <div>End Time: <strong>{formatDateTime(attempt.submitted_at)}</strong></div>
-    <br></br>
-    <div>
-      Duration: 
-      <strong>
-  {formatDuration(Math.floor((attempt.submitted_at - attempt.started_at) / 1000))}
-</strong>
-
-    </div>
-  </div>
-</div>
-    
+        <div style={{ marginTop: 6 }}>
+          <div>
+            Start Time: <strong>{formatDateTime(attempt.started_at)}</strong>
+          </div>
+          <br></br>
+          <div>
+            End Time: <strong>{formatDateTime(attempt.submitted_at)}</strong>
+          </div>
+          <br></br>
+          <div>
+            Duration:
+            <strong>
+              {formatDuration(
+                Math.floor((attempt.submitted_at - attempt.started_at) / 1000),
+              )}
+            </strong>
+          </div>
+        </div>
+      </div>
 
       {attempt.feedback ? (
         <div
@@ -206,7 +209,6 @@ export default function StudentAttemptDetails({ attempt, onBack }) {
           Student skipped feedback.
         </div>
       )}
-
     </div>
   );
 }
