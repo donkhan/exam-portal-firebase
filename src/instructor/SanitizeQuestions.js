@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 import { db } from "../firebase";
 import { useNavigate, useLocation } from "react-router-dom";
-import { doc, updateDoc } from "firebase/firestore";
-
 
 function SanitizeQuestions() {
   const navigate = useNavigate();
@@ -14,7 +19,6 @@ function SanitizeQuestions() {
   const DEV_MODE =
     window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1";
-
 
   const AI_FUNCTION_URL =
     "https://us-central1-exam-portal-3a4ac.cloudfunctions.net/checkAnswersWithAI";
@@ -27,13 +31,12 @@ function SanitizeQuestions() {
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState("");
 
-  // buffer = answers entered by teacher
+  // Buffer = answers entered by instructor
+  // [{ question_id, question_text, instructor_answer }]
   const [buffer, setBuffer] = useState([]);
-  // [{ question_id, question_text, teacher_answer }]
 
   const [aiResults, setAiResults] = useState(null);
   const [resolved, setResolved] = useState({});
-
   const [loading, setLoading] = useState(true);
 
   /* ===================== LOAD QUESTIONS ===================== */
@@ -65,22 +68,19 @@ function SanitizeQuestions() {
     setLoading(false);
   };
 
-  /* ===================== AI (MOCKED) ===================== */
+  /* ===================== AI (MOCKED IN DEV) ===================== */
 
   const callAIBackend = async (payload) => {
     if (DEV_MODE) {
-      console.log("DEV MODE: mocked AI response");
-      console.log("Payload:", payload);
-
       return {
         results: payload.map((item, idx) => ({
           question_id: item.question_id,
-          teacher_answer: item.teacher_answer,
-          ai_answer: idx % 2 === 0 ? item.teacher_answer : "23",
+          instructor_answer: item.instructor_answer,
+          ai_answer: idx % 2 === 0 ? item.instructor_answer : "23",
           agrees: idx % 2 === 0,
           reasoning:
             idx % 2 === 0
-              ? "Teacher answer accepted (DEV MODE)"
+              ? "Instructor answer accepted (DEV MODE)"
               : "AI computed a different answer (DEV MODE)",
         })),
       };
@@ -127,9 +127,14 @@ function SanitizeQuestions() {
     );
   }
 
-  /* ===================== CONFLICT RESOLUTION (HIGH PRIORITY) ===================== */
+  /* ===================== CONFLICT RESOLUTION ===================== */
 
   if (aiResults) {
+    // Lookup map to show question text during conflicts
+    const questionMap = Object.fromEntries(
+      buffer.map((b) => [b.question_id, b.question_text])
+    );
+
     return (
       <div style={{ padding: "20px" }}>
         <h2>AI Conflict Resolution</h2>
@@ -149,8 +154,22 @@ function SanitizeQuestions() {
             >
               <h4>Question {idx + 1}</h4>
 
+              {/* QUESTION TEXT */}
+              <p
+                style={{
+                  marginTop: "8px",
+                  padding: "8px",
+                  background: "#f9f9f9",
+                  borderLeft: "4px solid #1976d2",
+                  fontWeight: "500",
+                }}
+              >
+                {questionMap[r.question_id]}
+              </p>
+
               <p>
-                <strong>Teacher Answer:</strong> {r.teacher_answer}
+                <strong>Instructor Answer:</strong>{" "}
+                {r.instructor_answer}
               </p>
 
               <p>
@@ -163,7 +182,7 @@ function SanitizeQuestions() {
 
               {r.agrees ? (
                 <p style={{ color: "green" }}>
-                  ✅ AI agrees with teacher
+                  ✅ AI agrees with instructor
                 </p>
               ) : decision ? (
                 <p style={{ color: "blue" }}>
@@ -176,13 +195,13 @@ function SanitizeQuestions() {
                       setResolved((prev) => ({
                         ...prev,
                         [r.question_id]: {
-                          final_answer: r.teacher_answer,
-                          source: "teacher",
+                          final_answer: r.instructor_answer,
+                          source: "instructor",
                         },
                       }))
                     }
                   >
-                    ✅ Accept Teacher
+                    ✅ Accept Instructor
                   </button>
 
                   <button
@@ -207,62 +226,55 @@ function SanitizeQuestions() {
 
         <hr />
 
-       <button
-  onClick={async () => {
-    try {
-      // Build final answers list
-      const finalUpdates = aiResults.results.map((r) => {
-        // If AI agrees, auto-accept teacher
-        if (r.agrees) {
-          return {
-            question_id: r.question_id,
-            final_answer: r.teacher_answer,
-          };
-        }
+        <button
+          onClick={async () => {
+            try {
+              const finalUpdates = aiResults.results.map((r) => {
+                if (r.agrees) {
+                  return {
+                    question_id: r.question_id,
+                    final_answer: r.instructor_answer,
+                  };
+                }
 
-        // Conflict: must be resolved by teacher
-        const decision = resolved[r.question_id];
-        if (!decision) {
-          throw new Error(
-            "Please resolve all conflicts before saving."
-          );
-        }
+                const decision = resolved[r.question_id];
+                if (!decision) {
+                  throw new Error(
+                    "Please resolve all conflicts before saving."
+                  );
+                }
 
-        return {
-          question_id: r.question_id,
-          final_answer: decision.final_answer,
-        };
-      });
+                return {
+                  question_id: r.question_id,
+                  final_answer: decision.final_answer,
+                };
+              });
 
-      // Save each question
-      for (const item of finalUpdates) {
-        await updateDoc(
-          doc(db, "questions", item.question_id),
-          {
-            correct_answer: item.final_answer,
-            is_sanitized: true,
-            sanitizedAt: new Date(),
-          }
-        );
-      }
+              for (const item of finalUpdates) {
+                await updateDoc(
+                  doc(db, "questions", item.question_id),
+                  {
+                    correct_answer: item.final_answer,
+                    is_sanitized: true,
+                    sanitizedAt: new Date(),
+                  }
+                );
+              }
 
-      alert("✅ Questions sanitized successfully");
+              alert("✅ Questions sanitized successfully");
 
-      // Cleanup state
-      setAiResults(null);
-      setResolved({});
-      setBuffer([]);
+              setAiResults(null);
+              setResolved({});
+              setBuffer([]);
 
-      // Navigate back
-      navigate(-1);
-    } catch (err) {
-      alert(err.message || "Failed to save sanitized answers");
-    }
-  }}
->
-  ✅ Done & Save
-</button>
-
+              navigate(-1);
+            } catch (err) {
+              alert(err.message || "Failed to save sanitized answers");
+            }
+          }}
+        >
+          ✅ Done & Save
+        </button>
 
         <button
           style={{ marginLeft: "10px" }}
@@ -342,7 +354,7 @@ function SanitizeQuestions() {
               {
                 question_id: current.id,
                 question_text: current.question_text,
-                teacher_answer: answer,
+                instructor_answer: answer,
               },
             ]);
 
