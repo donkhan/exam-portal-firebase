@@ -12,6 +12,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import { useNavigate } from "react-router-dom";
 
 function QuestionsTable({ selectedCourseId }) {
   /* ===================== STATE ===================== */
@@ -27,6 +28,7 @@ function QuestionsTable({ selectedCourseId }) {
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
   const [pageSize, setPageSize] = useState(10);
+  const navigate = useNavigate();
 
   /* ===================== EFFECT ===================== */
 
@@ -193,7 +195,6 @@ function QuestionsTable({ selectedCourseId }) {
           <option value={20}>20</option>
           <option value={50}>50</option>
           <option value={50}>100</option>
-          
         </select>
       </span>
     </div>
@@ -207,6 +208,25 @@ function QuestionsTable({ selectedCourseId }) {
 
   return (
     <>
+      <button
+        onClick={() =>
+          navigate("/sanitize", {
+            state: { courseId: selectedCourseId },
+          })
+        }
+        style={{
+          background: "#1976d2",
+          color: "white",
+          padding: "6px 12px",
+          borderRadius: "4px",
+          border: "none",
+          cursor: "pointer",
+          marginBottom: "10px",
+        }}
+      >
+        🧼 Sanitize
+      </button>
+
       <PagingControls />
 
       <table

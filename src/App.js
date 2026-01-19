@@ -6,6 +6,8 @@ import { auth } from "./firebase";
 import { ThemeProvider } from "./ThemeContext";
 import "./themes.css";
 
+import SanitizeQuestions from "./instructor/SanitizeQuestions";
+
 /* ===== COMMON ===== */
 import HomePage from "./HomePage";
 
@@ -18,7 +20,6 @@ import InstructorApp from "./instructor/InstructorApp";
 import ExamResults from "./instructor/ExamResults";
 import ManageCourses from "./instructor/ManageCourses";
 import { isInstructor } from "./utils/isInstructor";
-
 
 function App() {
   const [user, setUser] = useState(null);
@@ -54,20 +55,24 @@ function App() {
               instructor ? <InstructorApp /> : <Navigate to="/" replace />
             }
           />
-         <Route path="/exam/:examId" element={<ExamApplication />} />
-
+          <Route path="/exam/:examId" element={<ExamApplication />} />
 
           <Route
             path="/instructor/results"
-            element={
-              instructor ? <ExamResults /> : <Navigate to="/" replace />
-            }
+            element={instructor ? <ExamResults /> : <Navigate to="/" replace />}
           />
 
           <Route
             path="/instructor/manage-courses"
             element={
               instructor ? <ManageCourses /> : <Navigate to="/" replace />
+            }
+          />
+
+          <Route
+            path="/sanitize"
+            element={
+              instructor ? <SanitizeQuestions /> : <Navigate to="/" replace />
             }
           />
 
