@@ -122,11 +122,7 @@ export default function ExamResults({ examId, onBack }) {
     loadResults();
   }, [examId]);
 
-  /* ---------- ACCESS CONTROL ---------- */
-  if (!user || !isInstructor(user)) {
-    return <h3>Access Denied.</h3>;
-  }
-
+  
   if (!examId) {
     return (
       <div style={{ padding: 20 }}>
