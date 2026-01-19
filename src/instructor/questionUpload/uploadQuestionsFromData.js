@@ -43,6 +43,9 @@ export async function uploadQuestionsFromData({
       q.difficulty = 'EASY';
     }
     if(!q.question_type || q.question_type === 'NUMERICAL') q.question_type = 'FILL_BLANK';
+    if(q.correct_answer){
+      if(q.correct_answer != '') q.is_sanitized = true;
+    }
 
     await addDoc(collection(db, "questions"), {
       course_id: effectiveCourseId,
