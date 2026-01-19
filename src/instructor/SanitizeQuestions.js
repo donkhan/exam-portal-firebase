@@ -16,9 +16,7 @@ function SanitizeQuestions() {
 
   /* ===================== CONFIG ===================== */
 
-  const DEV_MODE =
-    window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1";
+  const DEV_MODE = false;
 
   const AI_FUNCTION_URL =
     "https://us-central1-exam-portal-3a4ac.cloudfunctions.net/checkAnswersWithAI";
@@ -309,7 +307,6 @@ function SanitizeQuestions() {
 
             const aiResponse = await callAIBackend(buffer);
             if (!aiResponse) return;
-
             setAiResults(aiResponse);
           }}
         >

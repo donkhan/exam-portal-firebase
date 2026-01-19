@@ -35,32 +35,38 @@ const checkAnswersWithAI = async (req, res) => {
     let questionsBlock = "";
     items.forEach((q, i) => {
       questionsBlock +=
-          "Question " + (i + 1) + ":\n" +
-          q.question_text + "\n\n" +
-          "Teacher Answer:\n" +
-          q.teacher_answer + "\n\n";
+        "Question " + (i + 1) + ":\n" +
+        q.question_text + "\n\n" +
+        "Instructor Answer:\n" +
+        q.instructor_answer + "\n\n";
     });
 
     const systemPrompt =
-        "You are a school-level mathematics evaluator.\n\n" +
-        "Rules:\n" +
-        "- Solve each question independently.\n" +
-        "- Compute the correct answer.\n" +
-        "- Compare with the teacher answer.\n" +
-        "- Return ONLY valid JSON.\n";
+      "You are a school-level mathematics evaluator and a " +
+      "university computer science evaluator.\n\n" +
+      "Rules:\n" +
+      "- Solve each question independently.\n" +
+      "- Compute the correct answer.\n" +
+      "- Compare with the instructor answer using NUMERIC VALUES ONLY.\n" +
+      "- Ignore all units such as cm, m, cm^2, m^2,\n" +
+      "  sq cm, sq m, Rs, etc.\n" +
+      "- Treat values like '12', '12 cm', and '12 cm^2' as identical.\n" +
+      "- Do NOT penalize missing or extra units.\n" +
+      "- Decide agreement strictly based on numerical correctness.\n" +
+      "- Return ONLY valid JSON.\n";
 
     const userPrompt =
-        questionsBlock +
-        "\nReturn JSON in this format:\n\n" +
-        "{\n" +
-        "  \"results\": [\n" +
-        "    {\n" +
-        "      \"ai_answer\": \"string or number\",\n" +
-        "      \"agrees\": true | false,\n" +
-        "      \"reasoning\": \"short explanation\"\n" +
-        "    }\n" +
-        "  ]\n" +
-        "}\n";
+      questionsBlock +
+      "\nReturn JSON in this format:\n\n" +
+      "{\n" +
+      "  \"results\": [\n" +
+      "    {\n" +
+      "      \"ai_answer\": \"string or number\",\n" +
+      "      \"agrees\": true | false,\n" +
+      "      \"reasoning\": \"short explanation\"\n" +
+      "    }\n" +
+      "  ]\n" +
+      "}\n";
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4.1-mini",
@@ -85,7 +91,7 @@ const checkAnswersWithAI = async (req, res) => {
     const results = parsed.results.map((r, idx) => {
       return {
         question_id: items[idx].question_id,
-        teacher_answer: items[idx].teacher_answer,
+        instructor_answer: items[idx].instructor_answer,
         ai_answer: r.ai_answer,
         agrees: r.agrees,
         reasoning: r.reasoning || "",
