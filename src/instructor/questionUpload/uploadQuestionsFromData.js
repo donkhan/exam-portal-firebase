@@ -30,8 +30,7 @@ export async function uploadQuestionsFromData({
   for (const q of data.questions) {
     if (
       !q.chapter ||
-      !q.question_text ||
-      !q.correct_answer
+      !q.question_text 
     ) {
       alert("Invalid question entry detected " + q.question_no);
       setStatus("❌ Failed to read");

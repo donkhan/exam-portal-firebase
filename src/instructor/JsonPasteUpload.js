@@ -45,7 +45,7 @@ export default function JsonPasteUpload({ onQuestionsReady, externalText,onClear
         throw new Error(`Question ${index + 1}: missing question_text`);
       }
       if (!q.correct_answer) {
-        throw new Error(`Question ${index + 1}: missing correct_answer`);
+        q.is_sanitized = false;
       }
     });
 
