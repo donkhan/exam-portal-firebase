@@ -52,7 +52,7 @@ function SanitizeQuestions() {
 
     const q = query(
       collection(db, "questions"),
-      where("course_id", "==", courseId)
+      where("course_id", "==", courseId),
     );
 
     const snap = await getDocs(q);
@@ -118,11 +118,19 @@ function SanitizeQuestions() {
   /* ===================== GUARDS ===================== */
 
   if (!courseId) {
-    return <Centered><p>Course not selected.</p></Centered>;
+    return (
+      <Centered>
+        <p>Course not selected.</p>
+      </Centered>
+    );
   }
 
   if (loading) {
-    return <Centered><p>Loading questions…</p></Centered>;
+    return (
+      <Centered>
+        <p>Loading questions…</p>
+      </Centered>
+    );
   }
 
   if (questions.length === 0) {
@@ -208,7 +216,7 @@ function SanitizeQuestions() {
         onBack={() => navigate(-1)}
         onNext={() => {
           if (!answer) {
-            alert("Please enter an answer");
+            alert("Please enter an answer or skip.");
             return;
           }
 
@@ -221,6 +229,11 @@ function SanitizeQuestions() {
             },
           ]);
 
+          setAnswer("");
+          setIndex((i) => i + 1);
+        }}
+        onSkip={() => {
+          // ✅ Skip means: move forward, do NOT touch buffer
           setAnswer("");
           setIndex((i) => i + 1);
         }}

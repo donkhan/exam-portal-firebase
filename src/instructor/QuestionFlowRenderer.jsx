@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 
 function QuestionFlowRenderer({
   current,
@@ -9,18 +9,31 @@ function QuestionFlowRenderer({
   checkingAI,
   onAnswerChange,
   onNext,
+  onSkip,
   onRunAICheck,
   onBack,
 }) {
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [current, index]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      onNext();
+    }
+  };
+
   if (!current) {
     return (
       <>
         <h3>Reached end of questions</h3>
 
-        <button
-          disabled={checkingAI}
-          onClick={onRunAICheck}
-        >
+        <button disabled={checkingAI} onClick={onRunAICheck}>
           {checkingAI ? "🤖 Checking with AI…" : "🤖 Check with AI"} (
           {bufferLength})
         </button>
@@ -45,15 +58,21 @@ function QuestionFlowRenderer({
       </p>
 
       <input
+        ref={inputRef}
         type="text"
         value={answer}
         onChange={(e) => onAnswerChange(e.target.value)}
+        onKeyDown={handleKeyDown}
         placeholder="Enter answer"
         style={{ width: "100%", maxWidth: "320px", marginTop: "8px" }}
       />
 
       <div style={{ marginTop: "16px" }}>
         <button onClick={onNext}>▶ Next</button>
+
+        <button style={{ marginLeft: "8px" }} onClick={onSkip}>
+          ⏭ Skip
+        </button>
 
         <button
           style={{ marginLeft: "10px" }}
