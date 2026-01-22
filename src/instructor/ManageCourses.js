@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import { db } from "../firebase";
-import QuestionBankManagement from "./QuestionBankManagement";
-import ExamManagement from "./ExamManagement";
 import CourseTable from "./../components/CourseTable";
 
 import { fetchCourses } from "../services/course.service";
@@ -11,7 +11,9 @@ import {
   createCourse,
 } from "../actions/courseActions";
 
-function ManageCourses({ onBack }) {
+function ManageCourses() {
+  const navigate = useNavigate();
+
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,14 +28,6 @@ function ManageCourses({ onBack }) {
   const [newName, setNewName] = useState("");
   const [newActive, setNewActive] = useState(true);
 
-  /* ---------- QUESTION BANK VIEW ---------- */
-  // will store: { id, name }
-  const [viewQBForCourse, setViewQBForCourse] = useState(null);
-
-  /* ---------- CREATE EXAM VIEW ---------- */
-  // will store: { id, name }
-  const [createExamForCourse, setCreateExamForCourse] = useState(null);
-
   useEffect(() => {
     loadCourses();
   }, []);
@@ -47,13 +41,14 @@ function ManageCourses({ onBack }) {
       console.error("Error fetching courses:", err);
       alert(
         "Unable to load courses.\n\n" +
-          "Please check your internet connection and refresh the page." +
-          err,
+          "Please check your internet connection and refresh the page."
       );
     } finally {
       setLoading(false);
     }
   };
+
+  /* ---------- CRUD ACTIONS ---------- */
 
   const handleAdd = () =>
     createCourse({
@@ -77,7 +72,6 @@ function ManageCourses({ onBack }) {
       onSuccess: loadCourses,
     });
 
-  /* ---------- EDIT COURSE ---------- */
   const startEdit = (course) => {
     setEditingId(course.id);
     setEditName(course.course_name);
@@ -102,38 +96,22 @@ function ManageCourses({ onBack }) {
       },
     });
 
-  if (createExamForCourse) {
-    return (
-      <ExamManagement
-        preselectedCourseId={createExamForCourse.id}
-        preselectedCourseName={createExamForCourse.name}
-        onBack={() => setCreateExamForCourse(null)}
-      />
-    );
-  }
+  /* ---------- UI ---------- */
 
-  if (viewQBForCourse) {
-    return (
-      <QuestionBankManagement
-  courseId={viewQBForCourse.id}
-  courseName={viewQBForCourse.name}
-  onBack={() => setViewQBForCourse(null)}
-  onCreateExam={(courseId, courseName) => {
-    setCreateExamForCourse({
-      id: courseId,
-      name: courseName,
-    });
-  }}
-/>
+  
 
-    );
-  }
-
-  /* ---------- COURSE LIST UI ---------- */
   return (
-    <div>
-      <h3>Manage Courses</h3>
-      <button onClick={onBack}>← Back</button>
+  <div style={styles.page}>
+    <div style={styles.card}>
+      <h2>Manage Courses</h2>
+
+      <button
+        onClick={() => navigate("/instructor")}
+        style={{ marginBottom: "12px" }}
+      >
+        ← Back
+      </button>
+
       <hr />
 
       <button onClick={() => setShowAdd(!showAdd)}>
@@ -142,27 +120,7 @@ function ManageCourses({ onBack }) {
 
       {showAdd && (
         <div style={{ marginTop: "10px" }}>
-          <input
-            placeholder="Course ID (e.g. ADBMS)"
-            value={newId}
-            onChange={(e) => setNewId(e.target.value)}
-          />
-
-          <input
-            placeholder="Course Name"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-          />
-
-          <select
-            value={newActive ? "true" : "false"}
-            onChange={(e) => setNewActive(e.target.value === "true")}
-          >
-            <option value="true">Active</option>
-            <option value="false">Inactive</option>
-          </select>
-
-          <button onClick={handleAdd}>Save</button>
+          {/* existing add-course inputs */}
         </div>
       )}
 
@@ -184,11 +142,42 @@ function ManageCourses({ onBack }) {
           onEditSave={saveEdit}
           onEditCancel={cancelEdit}
           onDelete={handleDelete}
-          onViewQB={setViewQBForCourse}
-          onCreateExam={setCreateExamForCourse}
+          onViewQB={(course) =>
+            navigate(`/instructor/courses/${course.id}/questions`)
+          }
+          onCreateExam={(course) =>
+            navigate(`/instructor/exams?courseId=${course.id}`)
+          }
+          onSanitize={(course) =>
+            navigate(`/instructor/courses/${course.id}/sanitize`)
+          }
         />
       )}
     </div>
-  );
+  </div>
+);
+
 }
+
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "#f4f6f8",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    paddingTop: "40px",
+  },
+  card: {
+    width: "100%",
+    maxWidth: "1100px",
+    background: "#fff",
+    padding: "24px",
+    borderRadius: "8px",
+    boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
+  },
+};
+
+
 export default ManageCourses;

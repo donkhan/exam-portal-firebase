@@ -8,14 +8,14 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import ConflictResolutionRenderer from "./ConflictResolutionRenderer";
 import QuestionFlowRenderer from "./QuestionFlowRenderer";
 
 function SanitizeQuestions() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const { courseId } = useParams(); // ✅ ROUTE PARAM
 
   /* ===================== CONFIG ===================== */
 
@@ -25,8 +25,6 @@ function SanitizeQuestions() {
     "https://us-central1-exam-portal-3a4ac.cloudfunctions.net/checkAnswersWithAI";
 
   /* ===================== STATE ===================== */
-
-  const courseId = location.state?.courseId;
 
   const [questions, setQuestions] = useState([]);
   const [index, setIndex] = useState(0);
@@ -52,7 +50,7 @@ function SanitizeQuestions() {
 
     const q = query(
       collection(db, "questions"),
-      where("course_id", "==", courseId),
+      where("course_id", "==", courseId)
     );
 
     const snap = await getDocs(q);
@@ -120,7 +118,10 @@ function SanitizeQuestions() {
   if (!courseId) {
     return (
       <Centered>
-        <p>Course not selected.</p>
+        <p>Invalid course.</p>
+        <button onClick={() => navigate("/instructor/manage-courses")}>
+          ⬅ Back to Courses
+        </button>
       </Centered>
     );
   }
@@ -137,7 +138,13 @@ function SanitizeQuestions() {
     return (
       <Centered>
         <h3>No unsanitized questions 🎉</h3>
-        <button onClick={() => navigate(-1)}>⬅ Back</button>
+        <button
+          onClick={() =>
+            navigate(`/instructor/manage-courses`)
+          }
+        >
+          ⬅ Back to Courses
+        </button>
       </Centered>
     );
   }
@@ -182,10 +189,12 @@ function SanitizeQuestions() {
               }
 
               alert("✅ Questions sanitized successfully");
+
               setAiResults(null);
               setResolved({});
               setBuffer([]);
-              navigate(-1);
+
+              navigate("/instructor/manage-courses");
             } catch (err) {
               alert(err.message || "Save failed");
             }
@@ -213,7 +222,7 @@ function SanitizeQuestions() {
         bufferLength={buffer.length}
         checkingAI={checkingAI}
         onAnswerChange={setAnswer}
-        onBack={() => navigate(-1)}
+        onBack={() => navigate("/instructor/manage-courses")}
         onNext={() => {
           if (!answer) {
             alert("Please enter an answer or skip.");
@@ -233,7 +242,6 @@ function SanitizeQuestions() {
           setIndex((i) => i + 1);
         }}
         onSkip={() => {
-          // ✅ Skip means: move forward, do NOT touch buffer
           setAnswer("");
           setIndex((i) => i + 1);
         }}

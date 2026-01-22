@@ -209,23 +209,21 @@ function QuestionsTable({ selectedCourseId }) {
   return (
     <>
       <button
-        onClick={() =>
-          navigate("/sanitize", {
-            state: { courseId: selectedCourseId },
-          })
-        }
-        style={{
-          background: "#1976d2",
-          color: "white",
-          padding: "6px 12px",
-          borderRadius: "4px",
-          border: "none",
-          cursor: "pointer",
-          marginBottom: "10px",
-        }}
-      >
-        🧼 Sanitize
-      </button>
+  onClick={() =>
+    navigate(`/instructor/courses/${selectedCourseId}/sanitize`)
+  }
+  style={{
+    background: "#1976d2",
+    color: "white",
+    padding: "6px 12px",
+    borderRadius: "4px",
+    border: "none",
+    cursor: "pointer",
+    marginBottom: "10px",
+  }}
+>
+  🧼 Sanitize
+</button>
 
       <PagingControls />
 
