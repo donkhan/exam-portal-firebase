@@ -8,7 +8,6 @@ import { getFunctions, httpsCallable } from "firebase/functions";
 import { formatDateTime, formatDuration } from "../utils/time";
 import { isInstructor } from "../utils/isInstructor";
 
-
 export default function ExamResults({ examId, onBack }) {
   const [attempts, setAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,24 +56,21 @@ export default function ExamResults({ examId, onBack }) {
     direction: "asc", // "asc" | "desc"
   });
 
-
   const toJsDate = (ts) => {
     if (!ts) return null;
     if (ts.toDate) return ts.toDate(); // Firestore Timestamp
     return new Date(ts); // ISO string / Date fallback
   };
 
-
   const getDurationSeconds = (a) => {
-  if (a.total_time_sec != null) return a.total_time_sec;
+    if (a.total_time_sec != null) return a.total_time_sec;
 
-  const start = toJsDate(a.started_at);
-  const end = toJsDate(a.submitted_at);
+    const start = toJsDate(a.started_at);
+    const end = toJsDate(a.submitted_at);
 
-  if (!start || !end) return -Infinity;
-  return Math.floor((end - start) / 1000);
-};
-
+    if (!start || !end) return -Infinity;
+    return Math.floor((end - start) / 1000);
+  };
 
   const sortedAttempts = [...attempts].sort((a, b) => {
     if (!sortConfig.key) return 0;
@@ -92,9 +88,9 @@ export default function ExamResults({ examId, onBack }) {
     }
 
     if (sortConfig.key === "duration") {
-  valA = getDurationSeconds(a);
-  valB = getDurationSeconds(b);
-}
+      valA = getDurationSeconds(a);
+      valB = getDurationSeconds(b);
+    }
 
     if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
     if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
@@ -146,7 +142,6 @@ export default function ExamResults({ examId, onBack }) {
     loadResults();
   }, [examId]);
 
-  
   if (!examId) {
     return (
       <div style={{ padding: 20 }}>
@@ -195,47 +190,42 @@ export default function ExamResults({ examId, onBack }) {
     URL.revokeObjectURL(url);
   };
 
-  
-  
-  
   const renderFeedbackSummary = (feedback) => {
-  if (!feedback) return "Skipped";
+    if (!feedback) return "Skipped";
 
-  const parts = [];
+    const parts = [];
 
-  if (feedback.rating != null) {
-    parts.push(`⭐ ${feedback.rating}/5`);
-  }
+    if (feedback.rating != null) {
+      parts.push(`⭐ ${feedback.rating}/5`);
+    }
 
-  if (feedback.difficulty) {
-    parts.push(`📘 ${feedback.difficulty}`);
-  }
+    if (feedback.difficulty) {
+      parts.push(`📘 ${feedback.difficulty}`);
+    }
 
-  if (feedback.clarity != null) {
-    parts.push(`🔍 ${feedback.clarity}/5`);
-  }
+    if (feedback.clarity != null) {
+      parts.push(`🔍 ${feedback.clarity}/5`);
+    }
 
-  const header = parts.join(" | ");
+    const header = parts.join(" | ");
 
-  let comment = "";
-  if (feedback.comments) {
-    comment =
-      feedback.comments.length > 80
-        ? feedback.comments.slice(0, 80) + "…"
-        : feedback.comments;
-  }
+    let comment = "";
+    if (feedback.comments) {
+      comment =
+        feedback.comments.length > 80
+          ? feedback.comments.slice(0, 80) + "…"
+          : feedback.comments;
+    }
 
-  return (
-    <>
-      <div>{header || "—"}</div>
-      {comment && (
-        <div style={{ fontSize: "12px", color: "#555" }}>
-          “{comment}”
-        </div>
-      )}
-    </>
-  );
-};
+    return (
+      <>
+        <div>{header || "—"}</div>
+        {comment && (
+          <div style={{ fontSize: "12px", color: "#555" }}>“{comment}”</div>
+        )}
+      </>
+    );
+  };
 
   /* ---------- UI ---------- */
   return (
@@ -325,13 +315,13 @@ export default function ExamResults({ examId, onBack }) {
               <th>Start Time</th>
               <th>End Time</th>
               <th
-  style={{ cursor: "pointer", userSelect: "none" }}
-  onClick={() => handleSort("duration")}
->
-  Duration{" "}
-  {sortConfig.key === "duration" &&
-    (sortConfig.direction === "asc" ? "▲" : "▼")}
-</th>
+                style={{ cursor: "pointer", userSelect: "none" }}
+                onClick={() => handleSort("duration")}
+              >
+                Duration{" "}
+                {sortConfig.key === "duration" &&
+                  (sortConfig.direction === "asc" ? "▲" : "▼")}
+              </th>
 
               <th>Device</th>
 
@@ -352,7 +342,14 @@ export default function ExamResults({ examId, onBack }) {
                 <td style={{ maxWidth: 250 }}>
                   {renderFeedbackSummary(a.feedback)}
                 </td>
-                <td>{a.submitted ? "Submitted" : "In Progress"}</td>
+                <td>
+                  {a.status === "EVALUATED"
+                    ? "Evaluated"
+                    : a.submitted
+                      ? "Submitted"
+                      : "In Progress"}
+                </td>
+
                 <td>{formatDateTime(a.started_at)}</td>
 
                 <td>
