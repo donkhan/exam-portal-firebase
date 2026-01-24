@@ -10,28 +10,26 @@ exports.evaluateExamOnSubmit = onDocumentUpdated(
     const before = event.data.before.data();
     const after = event.data.after.data();
 
-    /* ========= GUARDS ========= */
-
     if (!before || !after) return;
 
     // 🔑 Explicit evaluation trigger
-    if (before.evaluate_request_id === after.evaluate_request_id) return;
-
-    // Prevent double evaluation
-    if (after.status === "EVALUATED") return;
-
-    console.log("Evaluating attempt:", event.params.examId);
-
-    const answers = after.answers;
-    const questions = after.questions;
-    const courseId = after.course_id;
-
-    if (!answers || !questions || !courseId) {
-      console.log("Missing answers/questions/courseId");
+    if (before.evaluate_request_id === after.evaluate_request_id) {
       return;
     }
 
-    /* ========= FETCH CORRECT ANSWERS ========= */
+    // Prevent double evaluation
+    if (after.status === "EVALUATED") {
+      console.log("Evaluation skipped (already evaluated):", event.params.examId);
+      return;
+    }
+
+    console.log("Evaluation started:", event.params.examId);
+
+    const { answers, questions, course_id: courseId } = after;
+    if (!answers || !questions || !courseId) {
+      console.log("Evaluation aborted (missing data):", event.params.examId);
+      return;
+    }
 
     const qSnap = await db
       .collection("questions")
@@ -42,8 +40,6 @@ exports.evaluateExamOnSubmit = onDocumentUpdated(
     qSnap.docs.forEach((doc) => {
       answerMap[doc.id] = doc.data();
     });
-
-    /* ========= EVALUATION ========= */
 
     let score = 0;
     let maxScore = 0;
@@ -113,18 +109,12 @@ exports.evaluateExamOnSubmit = onDocumentUpdated(
       });
     });
 
-    /* ========= WRITE RESULT ========= */
-
     await event.data.after.ref.update({
       status: "EVALUATED",
       score,
       max_score: maxScore,
       evaluated_at: Date.now(),
-      result_summary: {
-        correct,
-        wrong,
-        unanswered,
-      },
+      result_summary: { correct, wrong, unanswered },
       question_results: questionResults,
     });
 

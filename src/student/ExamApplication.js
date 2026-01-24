@@ -233,6 +233,7 @@ function ExamApplication() {
       submitted_at: Date.now(),
       submission_type: reason,
       status: "SUBMITTED",
+      evaluate_request_id: Date.now(),
     });
 
     setSubmitting(false);
