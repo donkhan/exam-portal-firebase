@@ -57,6 +57,25 @@ export default function ExamResults({ examId, onBack }) {
     direction: "asc", // "asc" | "desc"
   });
 
+
+  const toJsDate = (ts) => {
+    if (!ts) return null;
+    if (ts.toDate) return ts.toDate(); // Firestore Timestamp
+    return new Date(ts); // ISO string / Date fallback
+  };
+
+
+  const getDurationSeconds = (a) => {
+  if (a.total_time_sec != null) return a.total_time_sec;
+
+  const start = toJsDate(a.started_at);
+  const end = toJsDate(a.submitted_at);
+
+  if (!start || !end) return -Infinity;
+  return Math.floor((end - start) / 1000);
+};
+
+
   const sortedAttempts = [...attempts].sort((a, b) => {
     if (!sortConfig.key) return 0;
 
@@ -71,6 +90,11 @@ export default function ExamResults({ examId, onBack }) {
       valA = a.score ?? -Infinity;
       valB = b.score ?? -Infinity;
     }
+
+    if (sortConfig.key === "duration") {
+  valA = getDurationSeconds(a);
+  valB = getDurationSeconds(b);
+}
 
     if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
     if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
@@ -173,12 +197,7 @@ export default function ExamResults({ examId, onBack }) {
 
   
   
-  const toJsDate = (ts) => {
-    if (!ts) return null;
-    if (ts.toDate) return ts.toDate(); // Firestore Timestamp
-    return new Date(ts); // ISO string / Date fallback
-  };
-
+  
   const renderFeedbackSummary = (feedback) => {
   if (!feedback) return "Skipped";
 
@@ -305,7 +324,15 @@ export default function ExamResults({ examId, onBack }) {
 
               <th>Start Time</th>
               <th>End Time</th>
-              <th>Duration</th>
+              <th
+  style={{ cursor: "pointer", userSelect: "none" }}
+  onClick={() => handleSort("duration")}
+>
+  Duration{" "}
+  {sortConfig.key === "duration" &&
+    (sortConfig.direction === "asc" ? "▲" : "▼")}
+</th>
+
               <th>Device</th>
 
               <th>Action</th>
