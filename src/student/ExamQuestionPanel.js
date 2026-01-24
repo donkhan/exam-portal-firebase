@@ -14,6 +14,9 @@ const ExamQuestionPanel = ({
   onUpdateFill,
 }) => {
   if (!exam || !q) return null;
+  const blockCopy = (e) => {
+    e.preventDefault();
+  };
 
   return (
     <>
@@ -25,36 +28,58 @@ const ExamQuestionPanel = ({
         </p>
       )}
 
-      {/* QUESTION */}
-      <h3>
-        Q{currentIndex + 1}. {q.question_text}
-      </h3>
+      <h3
+  className="no-copy"
+  onCopy={blockCopy}
+  onContextMenu={blockCopy}
+>
+  Q{currentIndex + 1}. {q.question_text}
+</h3>
 
-      {/* ANSWER INPUTS */}
       {q.question_type === "MCQ" &&
         Object.entries(q.options).map(([k, v]) => (
+          
           <label key={k} className="mcq-option">
-            <input
-              type="radio"
-              name={`q-${currentIndex}`}
-              checked={answers[currentIndex]?.[0] === k}
-              onChange={() => onSelectMCQ(k)}
-            />
-            <span className="option-key">{k}.</span>
-            <span className="option-text">{v}</span>
-          </label>
+  <input
+    type="radio"
+    name={`q-${currentIndex}`}
+    checked={answers[currentIndex]?.[0] === k}
+    onChange={() => onSelectMCQ(k)}
+  />
+
+  <span className="option-key no-copy">{k}.</span>
+
+  <span
+    className="option-text no-copy"
+    onCopy={blockCopy}
+    onContextMenu={blockCopy}
+  >
+    {v}
+  </span>
+</label>
+
         ))}
 
       {q.question_type === "MSQ" &&
         Object.entries(q.options).map(([k, v]) => (
-          <label key={k}>
-            <input
-              type="checkbox"
-              checked={(answers[currentIndex] || []).includes(k)}
-              onChange={() => onToggleMSQ(k)}
-            />
-            {k}. {v}
-          </label>
+         <label key={k}>
+  <input
+    type="checkbox"
+    checked={(answers[currentIndex] || []).includes(k)}
+    onChange={() => onToggleMSQ(k)}
+  />
+
+  <span className="no-copy">{k}.</span>
+
+  <span
+    className="no-copy"
+    onCopy={blockCopy}
+    onContextMenu={blockCopy}
+  >
+    {v}
+  </span>
+</label>
+
         ))}
 
       {q.question_type === "FILL_BLANK" && (
@@ -67,7 +92,6 @@ const ExamQuestionPanel = ({
       <br />
       <br />
 
-      {/* NAVIGATION ONLY */}
       <div className="question-nav">
         <button disabled={currentIndex === 0} onClick={onPrev}>
           Prev
