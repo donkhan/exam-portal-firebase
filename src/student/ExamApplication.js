@@ -34,7 +34,7 @@ function ExamApplication() {
   const { examId } = useParams();
   const activeExamId = examId;
 
-  /* ================= STATE ================= */
+  const [focusEvents, setFocusEvents] = useState([]);
 
   const [user, setUser] = useState(null);
   const [exam, setExam] = useState(null);
@@ -48,7 +48,7 @@ function ExamApplication() {
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
 
-  /* ================= AUTH ================= */
+  
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u));
@@ -65,15 +65,46 @@ function ExamApplication() {
     navigate("/");
   };
 
-  /* ================= SHOW INSTRUCTIONS INITIALLY ================= */
-
+  
   useEffect(() => {
     if (user && !exam) {
       setShowInstructions(true);
     }
   }, [user, exam]);
 
-  /* ================= COURSE NAME ================= */
+  
+  useEffect(() => {
+  if (!exam || exam.submitted) return;
+
+  const handleVisibilityChange = () => {
+    if (document.hidden) {
+      alert("⚠️ Please stay on the exam tab. Activity is being recorded.");
+
+      setFocusEvents((prev) => [
+        ...prev,
+        { type: "TAB_HIDDEN", time: Date.now() },
+      ]);
+    }
+  };
+
+  const handleBlur = () => {
+    alert("⚠️ Please stay on the exam tab. Activity is being recorded.");
+
+    setFocusEvents((prev) => [
+      ...prev,
+      { type: "WINDOW_BLUR", time: Date.now() },
+    ]);
+  };
+
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+  window.addEventListener("blur", handleBlur);
+
+  return () => {
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+    window.removeEventListener("blur", handleBlur);
+  };
+}, [exam?.submitted]);
+
 
   useEffect(() => {
     if (!exam?.course_id) return;
@@ -234,6 +265,8 @@ function ExamApplication() {
       submission_type: reason,
       status: "SUBMITTED",
       evaluate_request_id: Date.now(),
+      focus_events: focusEvents,
+      focus_event_count: focusEvents.length,
     });
 
     setSubmitting(false);
