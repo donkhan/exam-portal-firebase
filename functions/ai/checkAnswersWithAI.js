@@ -1,7 +1,7 @@
 const OpenAI = require("openai");
 const {defineSecret} = require("firebase-functions/params");
 
-// ✅ Define secret (new way)
+// ✅ Define secret
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 
 const checkAnswersWithAI = async (req, res) => {
@@ -25,7 +25,7 @@ const checkAnswersWithAI = async (req, res) => {
       return res.status(400).json({error: "Invalid payload"});
     }
 
-    // ✅ Create OpenAI client INSIDE handler
+    // ✅ OpenAI client
     const openai = new OpenAI({
       apiKey: OPENAI_API_KEY.value(),
     });
@@ -48,11 +48,12 @@ const checkAnswersWithAI = async (req, res) => {
       "- Solve each question independently.\n" +
       "- Compute the correct answer.\n" +
       "- Compare with the instructor answer using NUMERIC VALUES ONLY.\n" +
-      "- Ignore all units such as cm, m, cm^2, m^2,\n" +
-      "  sq cm, sq m, Rs, etc.\n" +
+      "- Ignore all units such as cm, m, cm^2, m^2, sq cm, sq m, Rs, etc.\n" +
       "- Treat values like '12', '12 cm', and '12 cm^2' as identical.\n" +
       "- Do NOT penalize missing or extra units.\n" +
       "- Decide agreement strictly based on numerical correctness.\n" +
+      "- ALWAYS return ai_answer as a DECIMAL NUMBER.\n" +
+      "- NEVER return fractions like 5/6 or 3/4.\n" +
       "- Return ONLY valid JSON.\n";
 
     const userPrompt =
@@ -61,7 +62,7 @@ const checkAnswersWithAI = async (req, res) => {
       "{\n" +
       "  \"results\": [\n" +
       "    {\n" +
-      "      \"ai_answer\": \"string or number\",\n" +
+      "      \"ai_answer\": number,\n" +
       "      \"agrees\": true | false,\n" +
       "      \"reasoning\": \"short explanation\"\n" +
       "    }\n" +
@@ -71,24 +72,30 @@ const checkAnswersWithAI = async (req, res) => {
     const completion = await openai.chat.completions.create({
       model: "gpt-4.1-mini",
       temperature: 0,
+      response_format: {type: "json_object"}, // ✅ HARD JSON MODE
       messages: [
         {role: "system", content: systemPrompt},
         {role: "user", content: userPrompt},
       ],
     });
 
+    const raw = completion.choices[0].message.content;
+    console.log("RAW AI RESPONSE >>>", raw);
+
     let parsed;
     try {
-      parsed = JSON.parse(completion.choices[0].message.content);
+      parsed = JSON.parse(raw);
     } catch (e) {
-      console.error(
-          "AI raw output:",
-          completion.choices[0].message.content,
-      );
+      console.error("JSON PARSE FAILED:", raw);
       return res.status(500).json({error: "Invalid AI JSON response"});
     }
 
     const results = parsed.results.map((r, idx) => {
+      // ✅ Defensive guard
+      if (typeof r.ai_answer !== "number") {
+        throw new Error("ai_answer is not a decimal number");
+      }
+
       return {
         question_id: items[idx].question_id,
         instructor_answer: items[idx].instructor_answer,
