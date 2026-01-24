@@ -16,6 +16,24 @@ export default function ExamResults({ examId, onBack }) {
   const inProgressAttempts = attempts.filter((a) => !a.submitted);
   const [closing, setClosing] = useState(false);
 
+  const renderViolations = (a) => {
+    const count =
+      a.focus_event_count ??
+      (Array.isArray(a.focus_events) ? a.focus_events.length : 0);
+
+    if (!count || count === 0) {
+      return <span style={{ color: "green" }}>✔ Clean</span>;
+    }
+
+    if (count <= 2) {
+      return <span style={{ color: "#f57c00" }}>⚠ {count}</span>;
+    }
+
+    return (
+      <span style={{ color: "#c62828", fontWeight: "bold" }}>🚨 {count}</span>
+    );
+  };
+
   const handleCloseAndEvaluate = async () => {
     if (inProgressAttempts.length === 0) {
       alert("No in-progress attempts to close.");
@@ -324,7 +342,7 @@ export default function ExamResults({ examId, onBack }) {
               </th>
 
               <th>Device</th>
-
+              <th>Violations</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -372,6 +390,8 @@ export default function ExamResults({ examId, onBack }) {
                       })()}
                 </td>
                 <td>{renderDevice(a.device_type)}</td>
+                <td>{renderViolations(a)}</td>
+
                 <td>
                   <button onClick={() => setSelectedAttempt(a)}>View</button>
                 </td>

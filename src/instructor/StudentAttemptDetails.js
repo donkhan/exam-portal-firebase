@@ -4,7 +4,6 @@ import { formatDateTime, formatDuration } from "../utils/time";
 import { updateDoc } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 
-
 export default function StudentAttemptDetails({ attempt, onBack }) {
   const { questions = [], answers = {}, question_results = [] } = attempt;
   const totalMarksAwarded = question_results.reduce(
@@ -18,28 +17,24 @@ export default function StudentAttemptDetails({ attempt, onBack }) {
   );
 
   const handleEvaluateAttempt = async () => {
-  const ok = window.confirm(
-    "This will re-evaluate this student's attempt.\n\nProceed?",
-  );
+    const ok = window.confirm(
+      "This will re-evaluate this student's attempt.\n\nProceed?",
+    );
 
-  if (!ok) return;
+    if (!ok) return;
 
-  try {
-    const functions = getFunctions();
-    const triggerEval = httpsCallable(
-  functions,
-  "triggerExamEvaluation",
-);
-await triggerEval({ examId: attempt.id });
+    try {
+      const functions = getFunctions();
+      const triggerEval = httpsCallable(functions, "triggerExamEvaluation");
+      await triggerEval({ examId: attempt.id });
 
-    alert("Evaluation triggered. ");
-    onBack(); // go back & refresh list
-  } catch (err) {
-    console.error("Failed to evaluate attempt:", err);
-    alert("Unable to evaluate. Check console logs.");
-  }
-};
-
+      alert("Evaluation triggered. ");
+      onBack(); // go back & refresh list
+    } catch (err) {
+      console.error("Failed to evaluate attempt:", err);
+      alert("Unable to evaluate. Check console logs.");
+    }
+  };
 
   const handleDeleteAttempt = async () => {
     const ok = window.confirm(
@@ -74,23 +69,74 @@ await triggerEval({ examId: attempt.id });
     );
   };
 
+  const renderViolationsList = () => {
+    const events = Array.isArray(attempt.focus_events)
+      ? attempt.focus_events
+      : [];
+
+    if (events.length === 0) {
+      return (
+        <div style={{ color: "green", fontWeight: "bold" }}>
+          ✔ No violations detected
+        </div>
+      );
+    }
+
+    return (
+      <table
+        border="1"
+        cellPadding="6"
+        style={{
+          borderCollapse: "collapse",
+          width: "100%",
+          marginTop: 8,
+          fontSize: 14,
+        }}
+      >
+        <thead style={{ background: "#f9f9f9" }}>
+          <tr>
+            <th>#</th>
+            <th>Type</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {events.map((e, i) => (
+            <tr key={i}>
+              <td>{i + 1}</td>
+              <td>
+                {e.type === "TAB_SWITCH" && "Tab / App switched"}
+                {e.type === "WINDOW_BLUR" && "Window lost focus"}
+                {e.type === "VISIBILITY_CHANGE" && "Page hidden"}
+                {!["TAB_SWITCH", "WINDOW_BLUR", "VISIBILITY_CHANGE"].includes(
+                  e.type,
+                ) && e.type}
+              </td>
+              <td>{formatDateTime(new Date(e.time))}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  };
+
   return (
     <div style={{ marginTop: 20 }}>
       <button onClick={onBack}>← Back</button>
 
       <button
-  onClick={handleEvaluateAttempt}
-  style={{
-    marginLeft: 8,
-    background: "#1976d2",
-    color: "white",
-    border: "none",
-    padding: "6px 10px",
-    cursor: "pointer",
-  }}
->
-  Evaluate
-</button>
+        onClick={handleEvaluateAttempt}
+        style={{
+          marginLeft: 8,
+          background: "#1976d2",
+          color: "white",
+          border: "none",
+          padding: "6px 10px",
+          cursor: "pointer",
+        }}
+      >
+        Evaluate
+      </button>
 
       <button
         onClick={handleDeleteAttempt}
@@ -103,8 +149,6 @@ await triggerEval({ examId: attempt.id });
       >
         Delete Attempt
       </button>
-
-      
 
       <h3 style={{ marginTop: 10 }}>
         {attempt.user_name} ({attempt.user_email})
@@ -195,6 +239,20 @@ await triggerEval({ examId: attempt.id });
             </strong>
           </div>
         </div>
+      </div>
+
+      <div
+        style={{
+          marginTop: 12,
+          marginBottom: 16,
+          padding: "12px 14px",
+          border: "1px solid #ffe0b2",
+          background: "#fff8e1",
+          borderRadius: 6,
+        }}
+      >
+        <h4 style={{ marginTop: 0 }}>🚨 Exam Violations</h4>
+        {renderViolationsList()}
       </div>
 
       {attempt.feedback ? (
