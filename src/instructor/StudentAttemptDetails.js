@@ -1,6 +1,9 @@
 import { deleteDoc, doc } from "firebase/firestore";
 import { db } from "../firebase";
 import { formatDateTime, formatDuration } from "../utils/time";
+import { updateDoc } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
+
 
 export default function StudentAttemptDetails({ attempt, onBack }) {
   const { questions = [], answers = {}, question_results = [] } = attempt;
@@ -13,6 +16,30 @@ export default function StudentAttemptDetails({ attempt, onBack }) {
     (sum, q) => sum + (q?.marks ?? 0),
     0,
   );
+
+  const handleEvaluateAttempt = async () => {
+  const ok = window.confirm(
+    "This will re-evaluate this student's attempt.\n\nProceed?",
+  );
+
+  if (!ok) return;
+
+  try {
+    const functions = getFunctions();
+    const triggerEval = httpsCallable(
+  functions,
+  "triggerExamEvaluation",
+);
+await triggerEval({ examId: attempt.id });
+
+    alert("Evaluation triggered. ");
+    onBack(); // go back & refresh list
+  } catch (err) {
+    console.error("Failed to evaluate attempt:", err);
+    alert("Unable to evaluate. Check console logs.");
+  }
+};
+
 
   const handleDeleteAttempt = async () => {
     const ok = window.confirm(
@@ -52,6 +79,20 @@ export default function StudentAttemptDetails({ attempt, onBack }) {
       <button onClick={onBack}>← Back</button>
 
       <button
+  onClick={handleEvaluateAttempt}
+  style={{
+    marginLeft: 8,
+    background: "#1976d2",
+    color: "white",
+    border: "none",
+    padding: "6px 10px",
+    cursor: "pointer",
+  }}
+>
+  Evaluate
+</button>
+
+      <button
         onClick={handleDeleteAttempt}
         style={{
           background: "#ffeaea",
@@ -62,6 +103,8 @@ export default function StudentAttemptDetails({ attempt, onBack }) {
       >
         Delete Attempt
       </button>
+
+      
 
       <h3 style={{ marginTop: 10 }}>
         {attempt.user_name} ({attempt.user_email})
