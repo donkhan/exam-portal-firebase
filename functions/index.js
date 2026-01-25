@@ -10,6 +10,10 @@ exports.evaluateExamOnSubmit =
 exports.closeExamAndEvaluate =
   require("./closeExamAndEvaluate").closeExamAndEvaluate;
 
+exports.triggerExamEvaluation =
+  require("./triggerExamEvaluation").triggerExamEvaluation;
+
+
 /* ===== NEW AI FUNCTION (v2 STYLE) ===== */
 
 const {onRequest} = require("firebase-functions/v2/https");

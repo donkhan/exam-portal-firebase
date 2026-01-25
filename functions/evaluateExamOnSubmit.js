@@ -7,26 +7,29 @@ const db = admin.firestore();
 exports.evaluateExamOnSubmit = onDocumentUpdated(
   "exams/{examId}",
   async (event) => {
-
     const before = event.data.before.data();
     const after = event.data.after.data();
 
-    /* ========= GUARDS ========= */
-
     if (!before || !after) return;
-    if (before.submitted === true) return;
-    if (after.submitted !== true) return;
-    if (after.status === "EVALUATED") return;
 
-    console.log("Evaluating exam:", event.params.examId);
+    // 🔑 Explicit evaluation trigger
+    if (before.evaluate_request_id === after.evaluate_request_id) {
+      return;
+    }
 
-    const answers = after.answers;
-    const questions = after.questions;
-    const courseId = after.course_id;
+    // Prevent double evaluation
+    if (after.status === "EVALUATED") {
+      console.log("Evaluation skipped (already evaluated):", event.params.examId);
+      return;
+    }
 
-    if (!answers || !questions || !courseId) return;
+    console.log("Evaluation started:", event.params.examId);
 
-    /* ========= FETCH CORRECT ANSWERS ========= */
+    const { answers, questions, course_id: courseId } = after;
+    if (!answers || !questions || !courseId) {
+      console.log("Evaluation aborted (missing data):", event.params.examId);
+      return;
+    }
 
     const qSnap = await db
       .collection("questions")
@@ -38,8 +41,6 @@ exports.evaluateExamOnSubmit = onDocumentUpdated(
       answerMap[doc.id] = doc.data();
     });
 
-    /* ========= EVALUATION ========= */
-
     let score = 0;
     let maxScore = 0;
     let correct = 0;
@@ -49,15 +50,24 @@ exports.evaluateExamOnSubmit = onDocumentUpdated(
     const questionResults = [];
 
     questions.forEach((q, index) => {
-
       const studentAnswer = answers[index];
       const correctAnswer = answerMap[q.id]?.correct_answer;
       const marks = q.marks || 1;
 
       maxScore += marks;
-      let isCorrect = false;
 
-      if (studentAnswer === undefined) {
+      let isCorrect = false;
+      let isEvaluated = true;
+
+      const hasCorrectAnswer =
+        correctAnswer !== undefined &&
+        correctAnswer !== null &&
+        !(Array.isArray(correctAnswer) && correctAnswer.length === 0) &&
+        String(correctAnswer).trim() !== "";
+
+      if (!hasCorrectAnswer) {
+        isEvaluated = false;
+      } else if (studentAnswer === undefined) {
         unanswered++;
       } else if (q.question_type === "MCQ") {
         if (
@@ -81,36 +91,33 @@ exports.evaluateExamOnSubmit = onDocumentUpdated(
         }
       }
 
-      if (isCorrect) {
-        score += marks;
-        correct++;
-      } else if (studentAnswer !== undefined) {
-        wrong++;
+      if (isEvaluated) {
+        if (isCorrect) {
+          score += marks;
+          correct++;
+        } else if (studentAnswer !== undefined) {
+          wrong++;
+        }
       }
 
       questionResults.push({
         question_id: q.id,
-        is_correct: isCorrect,
-        marks_awarded: isCorrect ? marks : 0,
-        correct_answer: correctAnswer,
+        is_correct: isEvaluated ? isCorrect : null,
+        marks_awarded: isEvaluated && isCorrect ? marks : 0,
+        correct_answer: hasCorrectAnswer ? correctAnswer : null,
+        evaluated: isEvaluated,
       });
     });
-
-    /* ========= WRITE RESULT ========= */
 
     await event.data.after.ref.update({
       status: "EVALUATED",
       score,
       max_score: maxScore,
       evaluated_at: Date.now(),
-      result_summary: {
-        correct,
-        wrong,
-        unanswered,
-      },
+      result_summary: { correct, wrong, unanswered },
       question_results: questionResults,
     });
 
-    console.log("Evaluation completed");
+    console.log("Evaluation completed:", event.params.examId);
   }
 );

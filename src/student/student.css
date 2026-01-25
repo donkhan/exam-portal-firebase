@@ -263,3 +263,10 @@
 .student-rules li {
   margin-bottom: 8px;
 }
+
+.no-copy {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
