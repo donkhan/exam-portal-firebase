@@ -342,33 +342,49 @@ function QuestionsTable({ selectedCourseId }) {
 
                 <td>
                   {isEditing ? (
-                    <>
-                      <button onClick={() => saveEdit(q.id)}>✔ Save</button>
-                      <br />
-                      <button onClick={cancelEdit}>✖ Cancel</button>
-                    </>
-                  ) : (
-                    <>
-                      <button onClick={() => startEdit(q)}>✏️ Edit</button>
-                      {!q.is_sanitized && (
-                        <>
-                          <br />
-                          <button
-                            onClick={() => markSanitized(q)}
-                            style={{ fontSize: "12px", marginTop: "4px" }}
-                          >
-                            🧼 Sanitize
-                          </button>
-                        </>
-                      )}
-                      <hr />
+                    <div style={{ display: "flex", gap: "6px" }}>
                       <button
+                        className="btn btn-primary"
+                        onClick={() => saveEdit(q.id)}
+                      >
+                        ✔ Save
+                      </button>
+
+                      <button className="btn" onClick={cancelEdit}>
+                        ✖ Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "6px",
+                      }}
+                    >
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => startEdit(q)}
+                      >
+                        ✏️ Edit
+                      </button>
+
+                      {!q.is_sanitized && (
+                        <button
+                          className="btn"
+                          onClick={() => markSanitized(q)}
+                        >
+                          🧼 Sanitize
+                        </button>
+                      )}
+
+                      <button
+                        className="btn btn-danger"
                         onClick={() => deleteSingleQuestion(q.id)}
-                        style={{ color: "red" }}
                       >
                         Delete
                       </button>
-                    </>
+                    </div>
                   )}
                 </td>
               </tr>

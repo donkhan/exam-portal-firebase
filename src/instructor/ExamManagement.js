@@ -235,19 +235,22 @@ function ExamManagement({
                     <td>{e.total_questions}</td>
                     <td>{e.active ? "YES" : "NO"}</td>
                     <td>
-                      <button onClick={() => onViewResults(e.exam_id)}>
-                        Results
-                      </button>
-                      <button
-                        onClick={() => deleteExam(e.id, e.exam_id)}
-                        style={{
-                          marginLeft: "6px",
-                          background: "#b00020",
-                          color: "white",
-                        }}
-                      >
-                        Delete
-                      </button>
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => onViewResults(e.exam_id)}
+                        >
+                          Results
+                        </button>
+
+                        <button
+                          className="btn btn-danger"
+                          onClick={() => deleteExam(e.id, e.exam_id)}
+                          title="Delete exam and all results"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
