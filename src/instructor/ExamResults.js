@@ -6,7 +6,7 @@ import StudentAttemptDetails from "./StudentAttemptDetails";
 import { renderDevice } from "../utils/device";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { formatDateTime, formatDuration } from "../utils/time";
-import { isInstructor } from "../utils/isInstructor";
+import { deleteAttempt } from "../services/attempt.service";
 
 export default function ExamResults({ examId, onBack }) {
   const [attempts, setAttempts] = useState([]);
@@ -32,6 +32,12 @@ export default function ExamResults({ examId, onBack }) {
     return (
       <span style={{ color: "#c62828", fontWeight: "bold" }}>🚨 {count}</span>
     );
+  };
+
+  const handleDeleteAttempt = async (attemptId) => {
+    await deleteAttempt(attemptId);
+
+    setAttempts((prev) => prev.filter((a) => a.id !== attemptId));
   };
 
   const handleCloseAndEvaluate = async () => {
@@ -393,7 +399,22 @@ export default function ExamResults({ examId, onBack }) {
                 <td>{renderViolations(a)}</td>
 
                 <td>
-                  <button onClick={() => setSelectedAttempt(a)}>View</button>
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setSelectedAttempt(a)}
+                    >
+                      View
+                    </button>
+
+                    <button
+                      className="btn btn-danger"
+                      onClick={() => handleDeleteAttempt(a.id)}
+                      title="Delete attempt"
+                    >
+                      🗑
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
